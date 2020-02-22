@@ -1,0 +1,35 @@
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using TMPro;
+using UnityEngine;
+
+public class ChatManager : MonoBehaviour
+{
+    [SerializeField]
+    private GameObject chatPannel, textObject;
+
+    private List<Message> messages = new List<Message>(26);
+    private int messageLimit = 25;
+    
+    public void SendToActionLog(string text)
+    {
+        if (messages.Count >= messageLimit)
+        {
+            Destroy(messages[0].TextObject.gameObject);
+            messages.Remove(messages[0]);
+        }
+        Message newMessage = new Message();
+        newMessage.Text = text;
+        GameObject newText = Instantiate(textObject, chatPannel.transform);
+        newMessage.TextObject = newText.GetComponent<TMP_Text>();
+        newMessage.TextObject.text = text;
+        messages.Add(newMessage);
+    }
+}
+
+public class Message
+{
+    public string Text;
+    public TMP_Text TextObject;
+}
