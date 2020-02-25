@@ -32,8 +32,10 @@ public class ItemDropHandler : MonoBehaviour, IDropHandler
             GetComponent<Image>().sprite = ItemDragHandler.ObjectBeingDragged.GetComponent<Image>().sprite;
         
             //disable played card and it's parent slot
-            ItemDragHandler.ObjectBeingDragged.SetActive(false);
-            ItemDragHandler.ObjectBeingDragged.transform.parent.gameObject.SetActive(false);
+            Destroy(ItemDragHandler.ObjectBeingDragged.transform.parent.gameObject);
+            Destroy(ItemDragHandler.ObjectBeingDragged);
+            //ItemDragHandler.ObjectBeingDragged.SetActive(false);
+            //ItemDragHandler.ObjectBeingDragged.transform.parent.gameObject.SetActive(false);
 
             //place token on board & set enemy turn
             gameSystem.PlaceToken(pos, "white", 1);

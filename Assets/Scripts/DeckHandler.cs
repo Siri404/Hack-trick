@@ -12,11 +12,12 @@ public class DeckHandler : MonoBehaviour
     private int cardsInDeck = 18;
     private Random generator = new Random();
     
-    public int lastPlayed;
+    public int lastPlayed = -1;
     public Image lastCardImage;
 
     public List<GameObject> cards;
     public Transform cardHolder;
+    public Transform enemyCardHolder;
     public GameObject panel;
     public GameSystem gameSystem;
     public ChatManager chatManager;
@@ -38,10 +39,18 @@ public class DeckHandler : MonoBehaviour
             deck[i] = 3;
         }
 
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < playerHand.Count; i++)
         {
             deck[playerHand[i]]--;
+        }
+
+        for (int i = 0; i < enemyHand.Count; i++)
+        {
             deck[enemyHand[i]]--;
+        }
+
+        if (lastPlayed >= 0)
+        {
             deck[lastPlayed]--;
         }
     }
@@ -71,13 +80,21 @@ public class DeckHandler : MonoBehaviour
         deck[card]--;
         cardsInDeck--;
         enemyHand.Add(card);
+        Instantiate(cards[6], Instantiate(panel, enemyCardHolder).transform);
     }
 
     //draw a card for the player whose turn is currently ongoing
     public void DrawForPlayer()
     {
         if (gameSystem.state != GameState.Playerturn) return;
-        
+        if (gameSystem.playerForcedToPlay && !(playerHand.Count == 1 && playerHand[0] == lastPlayed ||
+                                               playerHand.Count == 2 && playerHand[0] == lastPlayed &&
+                                               playerHand[1] == lastPlayed))
+        {
+            chatManager.SendToActionLog("You are forced to play a card this turn!");
+            return;
+        }
+
         if (playerHand.Count == 4)
         {
             //can't have more than 4 cards in hand
@@ -143,6 +160,7 @@ public class DeckHandler : MonoBehaviour
             deck[card]--;
             cardsInDeck--;
             enemyHand.Add(card);
+            Instantiate(cards[6], Instantiate(panel, enemyCardHolder).transform);
         }
 
         //draw for player
