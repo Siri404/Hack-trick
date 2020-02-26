@@ -20,6 +20,7 @@
         <e p="Scripts" t="Include">
           <e p="ChatManager.cs" t="Include" />
           <e p="DeckHandler.cs" t="Include" />
+          <e p="GameOver.cs" t="Include" />
           <e p="GameSystem.cs" t="Include" />
           <e p="ItemDragHandler.cs" t="Include" />
           <e p="ItemDropHandler.cs" t="Include" />
