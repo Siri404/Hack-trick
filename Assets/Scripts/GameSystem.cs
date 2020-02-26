@@ -26,6 +26,7 @@ public class GameSystem : MonoBehaviour
     public DeckHandler deckHandler;
     public Image lastCardImage;
     public ChatManager chatManager;
+    public GameOver gameOver;
     public GameObject EnemyCardHolder;
     
     private bool alreadyAsked;
@@ -211,11 +212,13 @@ public class GameSystem : MonoBehaviour
                 {
                     chatManager.SendToActionLog("You Won!");
                     state = GameState.Won;
+                    gameOver.GameOverDialogue();
                 }
                 else
                 {
                     chatManager.SendToActionLog("You Lost!");
                     state = GameState.Lost;
+                    gameOver.GameOverDialogue();
                 }
             }
             
@@ -263,6 +266,7 @@ public class GameSystem : MonoBehaviour
             {
                 chatManager.SendToActionLog("You Won!");
                 state = GameState.Won;
+                gameOver.GameOverDialogue();
                 return;
             }
             
@@ -271,6 +275,7 @@ public class GameSystem : MonoBehaviour
             {
                 chatManager.SendToActionLog("You Lost!");
                 state = GameState.Lost;
+                gameOver.GameOverDialogue();
                 return;
             }
             
@@ -279,6 +284,7 @@ public class GameSystem : MonoBehaviour
             {
                 chatManager.SendToActionLog("You Won!");
                 state = GameState.Won;
+                gameOver.GameOverDialogue();
                 return;
             }
             
@@ -287,6 +293,7 @@ public class GameSystem : MonoBehaviour
             {
                 chatManager.SendToActionLog("You Lost!");
                 state = GameState.Lost;
+                gameOver.GameOverDialogue();
                 return;
             }
         }
@@ -297,6 +304,7 @@ public class GameSystem : MonoBehaviour
         {
             chatManager.SendToActionLog("You Won!");
             state = GameState.Won;
+            gameOver.GameOverDialogue();
             return;
 
         }
@@ -306,6 +314,7 @@ public class GameSystem : MonoBehaviour
         {
             chatManager.SendToActionLog("You Lost!");
             state = GameState.Lost;
+            gameOver.GameOverDialogue();
             return;
         }
 
@@ -314,6 +323,7 @@ public class GameSystem : MonoBehaviour
         {
             chatManager.SendToActionLog("You Won!");
             state = GameState.Won;
+            gameOver.GameOverDialogue();
 
         }
         
@@ -322,11 +332,13 @@ public class GameSystem : MonoBehaviour
         {
             chatManager.SendToActionLog("You Lost!");
             state = GameState.Lost;
+            gameOver.GameOverDialogue();
         }
         if (int.Parse(enemyTokens.text) == 0)
         {
             chatManager.SendToActionLog("You Won!");
             state = GameState.Won;
+            gameOver.GameOverDialogue();
             return;
         }
             
@@ -334,6 +346,7 @@ public class GameSystem : MonoBehaviour
         {
             chatManager.SendToActionLog("You Lost!");
             state = GameState.Lost;
+            gameOver.GameOverDialogue();
         }
     }
 
@@ -422,6 +435,7 @@ public class GameSystem : MonoBehaviour
         enemyTokens.text = (int.Parse(enemyTokens.text) - 1).ToString();
         chatManager.SendToActionLog("Enemy blocking next turn!");
     }
+    
 }
 
 
