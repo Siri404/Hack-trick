@@ -220,6 +220,8 @@ public class GameSystem : MonoBehaviour
                     state = GameState.Lost;
                     gameOver.GameOverDialogue();
                 }
+
+                return;
             }
             
             CheckGameOver(); 
