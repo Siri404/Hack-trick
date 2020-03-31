@@ -160,6 +160,8 @@ public class GameSystem : MonoBehaviour
             
             //set last played card
             deckHandler.lastPlayed = card;
+            deckHandler.playedCards.Add(card);
+            deckHandler.InstantiatePlayedCard(card);
             lastCardImage.sprite = deckHandler.cards[card].GetComponent<Image>().sprite;
             
             PlaceToken(pos, "red", 0);

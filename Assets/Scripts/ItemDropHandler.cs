@@ -29,6 +29,8 @@ public class ItemDropHandler : MonoBehaviour, IDropHandler
             
             //set last played card
             deckHandler.lastPlayed = card;
+            deckHandler.playedCards.Add(card);
+            deckHandler.InstantiatePlayedCard(card);
             GetComponent<Image>().sprite = ItemDragHandler.ObjectBeingDragged.GetComponent<Image>().sprite;
         
             //disable played card and it's parent slot
