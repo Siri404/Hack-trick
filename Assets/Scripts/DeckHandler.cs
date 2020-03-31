@@ -39,19 +39,24 @@ public class DeckHandler : MonoBehaviour
             deck[i] = 3;
         }
 
+        cardsInDeck = 18;
+
         for (int i = 0; i < playerHand.Count; i++)
         {
             deck[playerHand[i]]--;
+            cardsInDeck--;
         }
 
         for (int i = 0; i < enemyHand.Count; i++)
         {
             deck[enemyHand[i]]--;
+            cardsInDeck--;
         }
 
         if (lastPlayed >= 0)
         {
             deck[lastPlayed]--;
+            cardsInDeck--;
         }
     }
 
@@ -188,6 +193,7 @@ public class DeckHandler : MonoBehaviour
 
         lastPlayed = card;
         deck[card]--;
+        cardsInDeck--;
         lastCardImage.sprite = cards[card].GetComponent<Image>().sprite;
         
         chatManager.SendToActionLog("Enemy card total is: " + enemyHand.Sum());

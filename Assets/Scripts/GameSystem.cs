@@ -168,7 +168,7 @@ public class GameSystem : MonoBehaviour
         //game over?
         if (state != GameState.Enemyturn) yield break;
         
-        yield return new WaitForSeconds(2f);
+        yield return new WaitForSeconds(1f);
         
         //reset forcedToPlay here to avoid bug by player spamming the button right before his turn
         enemyForcedToPlay = false;
@@ -220,6 +220,8 @@ public class GameSystem : MonoBehaviour
                     state = GameState.Lost;
                     gameOver.GameOverDialogue();
                 }
+
+                return;
             }
             
             CheckGameOver(); 
