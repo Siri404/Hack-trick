@@ -12,12 +12,14 @@ public class DeckHandler : MonoBehaviour
     private int cardsInDeck = 18;
     private Random generator = new Random();
     
+    public List<int> playedCards = new List<int>(18);
     public int lastPlayed = -1;
     public Image lastCardImage;
 
     public List<GameObject> cards;
     public Transform cardHolder;
     public Transform enemyCardHolder;
+    public Transform playedCardsHolder;
     public GameObject panel;
     public GameSystem gameSystem;
     public ChatManager chatManager;
@@ -34,6 +36,11 @@ public class DeckHandler : MonoBehaviour
     //shuffle the deck, cards in hand and last played are not returned to the shuffled deck
     private void shuffle_deck()
     {
+        chatManager.SendToActionLog("Shuffling deck!");
+        playedCards.Clear();
+        foreach (Transform child in playedCardsHolder) {
+            Destroy(child.gameObject);
+        }
         for (int i = 0; i < 6; i++)
         {
             deck[i] = 3;
@@ -56,6 +63,8 @@ public class DeckHandler : MonoBehaviour
         if (lastPlayed >= 0)
         {
             deck[lastPlayed]--;
+            playedCards.Add(lastPlayed);
+            InstantiatePlayedCard(lastPlayed);
             cardsInDeck--;
         }
     }
@@ -192,11 +201,18 @@ public class DeckHandler : MonoBehaviour
         }
 
         lastPlayed = card;
+        playedCards.Add(card);
+        InstantiatePlayedCard(card);
         deck[card]--;
         cardsInDeck--;
         lastCardImage.sprite = cards[card].GetComponent<Image>().sprite;
         
         chatManager.SendToActionLog("Enemy card total is: " + enemyHand.Sum());
 
+    }
+    
+    public void InstantiatePlayedCard(int card)
+    {
+        Instantiate(cards[card], Instantiate(panel, playedCardsHolder).transform);
     }
 }
