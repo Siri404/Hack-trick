@@ -3,11 +3,15 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class ChatManager : MonoBehaviour
 {
+    [FormerlySerializedAs("chatPannel")] [SerializeField]
+    private GameObject chatPanel;
+
     [SerializeField]
-    private GameObject chatPannel, textObject;
+    private GameObject textObject;
 
     private List<Message> messages = new List<Message>(26);
     private int messageLimit = 25;
@@ -21,7 +25,7 @@ public class ChatManager : MonoBehaviour
         }
         Message newMessage = new Message();
         newMessage.Text = text;
-        GameObject newText = Instantiate(textObject, chatPannel.transform);
+        GameObject newText = Instantiate(textObject, chatPanel.transform);
         newMessage.TextObject = newText.GetComponent<TMP_Text>();
         newMessage.TextObject.text = text;
         messages.Add(newMessage);

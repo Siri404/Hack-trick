@@ -6,6 +6,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
+using Object = UnityEngine.Object;
 using Random = System.Random;
 
 public enum GameState { Start, Playerturn, Enemyturn, Won, Lost}
@@ -28,6 +29,8 @@ public class GameSystem : MonoBehaviour
     public ChatManager chatManager;
     public GameOver gameOver;
     public GameObject EnemyCardHolder;
+    public GameObject PlayerCardHolder;
+    public GameObject PlayedCardsPanel;
     
     private bool alreadyAsked;
     public bool playerForcedToPlay;
@@ -35,7 +38,38 @@ public class GameSystem : MonoBehaviour
     private bool playerBlocking;
     private bool enemyBlocking;
     private readonly Random _random = new Random();
+    
+    public void ResetGame()
+    {
+        //destroy cards for player and enemy
+        Transform[] children = PlayerCardHolder.GetComponentsInChildren<Transform>();
+        for (int i = 1; i < children.Length; i++)
+        {
+            Destroy(children[i].gameObject);
+        }
+        
+        children = EnemyCardHolder.GetComponentsInChildren<Transform>();
+        for (int i = 1; i < children.Length; i++)
+        {
+            Destroy(children[i].gameObject);
+        }
 
+        children = PlayedCardsPanel.GetComponentsInChildren<Transform>();
+        for (int i = 1; i < children.Length; i++)
+        {
+            Destroy(children[i].gameObject);
+        }
+
+        //reset all slots
+        for (int i = 0; i < 9; i++)
+        {
+            _slots[i].ResetSlot();
+        }
+        
+        chatManager.SendToActionLog("Game reset!");
+        state = GameState.Start;
+        StartCoroutine(SetupGame());
+    }
     private void Start()
     {
         //initialize the 9 slots of the board and the slot converter
@@ -76,13 +110,13 @@ public class GameSystem : MonoBehaviour
         if (_random.Next(0, 2) == 1)
         {
             state = GameState.Playerturn;
-            deckHandler.GameSetup();
+            deckHandler.ResetDeck();
             StartCoroutine(PlayerTurn());
         }
         else
         {
             state = GameState.Enemyturn;
-            deckHandler.GameSetup();
+            deckHandler.ResetDeck();
             StartCoroutine(EnemyTurn());
         }
     }
@@ -93,64 +127,79 @@ public class GameSystem : MonoBehaviour
         while (state == GameState.Playerturn)
         {
             chatManager.SendToActionLog("Waiting for player");
-            yield return new WaitUntil(() => state == GameState.Enemyturn);
+            yield return new WaitUntil(() => state == GameState.Enemyturn || state == GameState.Start);
         }
+
+        //if state is start -> game was reset, must not start EnemyTurn again
+        if (state == GameState.Enemyturn)
+        {
+            StartCoroutine(EnemyTurn());
+        }
+    }
+    
+    IEnumerator PlayerDecision(float[] vectorAction)
+    {
+        if (vectorAction[1] == 1f)
+        {
+            BlockForPlayer();
+        }
+
+        if (vectorAction[2] == 1f)
+        {
+            ForceEnemyToPlay();
+        }
+
+        if (vectorAction[0] == -1)
+        {
+            deckHandler.DrawForPlayer();
+        }
+        else
+        {
+            int card = (int) vectorAction[0];
+            deckHandler.RemoveFromPlayer(card);
+            DestroyCardFromPlayerHolder(card);
+
+            //get the position on board for token placement
+            int pos = deckHandler.lastPlayed + card - 1;
+            
+            //set last played card
+            deckHandler.lastPlayed = card;
+            deckHandler.playedCards.Add(card);
+            deckHandler.InstantiatePlayedCard(card);
+            lastCardImage.sprite = deckHandler.cards[card].GetComponent<Image>().sprite;
+            
+            PlaceToken(pos, "white", 1);
+        }
+        //game over?
+        if (state != GameState.Playerturn) yield break;
+        
+        yield return new WaitForSeconds(1f);
+        
+        playerForcedToPlay = false;
+        enemyBlocking = false;
+        state = GameState.Enemyturn;
         StartCoroutine(EnemyTurn());
     }
 
-    IEnumerator EnemyTurn()
+    IEnumerator EnemyDecision(float[] vectorAction)
     {
-        //reset forcedToPlay after player turn is over
-        playerForcedToPlay = false;
-        enemyBlocking = false;
-        
-        //game over?
-        if (state != GameState.Enemyturn) yield break;
-        
-        chatManager.SendToActionLog("Enemy turn");
-        yield return new WaitForSeconds(3f);
-
-        if (_random.Next(0, 7) == 0)
+        if (vectorAction[1] == 1f)
         {
             BlockForEnemy();
         }
 
-        if (_random.Next(0, 6) == 0)
+        if (vectorAction[2] == 1f)
         {
             ForcePlayerToPlay();
         }
 
-        if (deckHandler.enemyHand.Count == 1 && deckHandler.enemyHand[0] == deckHandler.lastPlayed || 
-            deckHandler.enemyHand.Count == 2 && deckHandler.enemyHand[0] == deckHandler.lastPlayed 
-                                             && deckHandler.enemyHand[1] == deckHandler.lastPlayed)
+        if (vectorAction[0] == -1)
         {
-            if (enemyForcedToPlay)
-            {
-                chatManager.SendToActionLog("Enemy draws a card because he can't play the card(s) in hand");
-            }
-            else
-            {
-                chatManager.SendToActionLog("Enemy draws a card");
-            }
-            deckHandler.DrawForEnemy();
-            
-        }
-        
-        //coin flip for draw / play card
-        else if (deckHandler.enemyHand.Count < 4 && _random.Next(0,2) == 1 && enemyForcedToPlay == false || deckHandler.enemyHand.Count == 0)
-        {
-            chatManager.SendToActionLog("Enemy draws a card");
             deckHandler.DrawForEnemy();
         }
         else
         {
-            chatManager.SendToActionLog("Enemy plays a card");
-            //play random card from hand
-            int card = deckHandler.lastPlayed;
-            while (card == deckHandler.lastPlayed)
-            {
-                card = deckHandler.enemyHand[_random.Next(0, deckHandler.enemyHand.Count)];
-            }
+            int card = (int) vectorAction[0];
             deckHandler.RemoveFromEnemy(card);
             Transform[] transforms = EnemyCardHolder.GetComponentsInChildren<Transform>();
             Destroy(transforms[1].gameObject);
@@ -166,7 +215,6 @@ public class GameSystem : MonoBehaviour
             
             PlaceToken(pos, "red", 0);
         }
-        
         //game over?
         if (state != GameState.Enemyturn) yield break;
         
@@ -177,6 +225,101 @@ public class GameSystem : MonoBehaviour
         playerBlocking = false;
         state = GameState.Playerturn;
         StartCoroutine(PlayerTurn());
+    }
+
+    IEnumerator EnemyTurn()
+    {
+        //setup the vector action
+        float[] vectorAction = new float[3];
+        for (int i = 0; i < 3; i++)
+        {
+            vectorAction[i] = 0;
+        }
+        
+        //reset forcedToPlay after player turn is over
+        playerForcedToPlay = false;
+        enemyBlocking = false;
+        
+        //game over?
+        if (state != GameState.Enemyturn) yield break;
+        
+        chatManager.SendToActionLog("Enemy turn");
+        yield return new WaitForSeconds(3f);
+
+        if (_random.Next(0, 7) == 0)
+        {
+            vectorAction[1] = 1f;
+            //BlockForEnemy();
+        }
+
+        if (_random.Next(0, 6) == 0)
+        {
+            vectorAction[2] = 1;
+            //ForcePlayerToPlay();
+        }
+
+        if (deckHandler.enemyHand.Count == 1 && deckHandler.enemyHand[0] == deckHandler.lastPlayed || 
+            deckHandler.enemyHand.Count == 2 && deckHandler.enemyHand[0] == deckHandler.lastPlayed 
+                                             && deckHandler.enemyHand[1] == deckHandler.lastPlayed)
+        {
+            if (enemyForcedToPlay)
+            {
+                chatManager.SendToActionLog("Enemy draws a card because he can't play the card(s) in hand");
+            }
+            else
+            {
+                chatManager.SendToActionLog("Enemy draws a card");
+            }
+
+            vectorAction[0] = -1f;
+            //deckHandler.DrawForEnemy();
+            
+        }
+        
+        //coin flip for draw / play card
+        else if (deckHandler.enemyHand.Count < 4 && _random.Next(0,2) == 1 && enemyForcedToPlay == false || deckHandler.enemyHand.Count == 0)
+        {
+            chatManager.SendToActionLog("Enemy draws a card");
+            vectorAction[0] = -1f;
+            //deckHandler.DrawForEnemy();
+        }
+        else
+        {
+            chatManager.SendToActionLog("Enemy plays a card");
+            //play random card from hand
+            int card = deckHandler.lastPlayed;
+            while (card == deckHandler.lastPlayed)
+            {
+                card = deckHandler.enemyHand[_random.Next(0, deckHandler.enemyHand.Count)];
+            }
+
+            vectorAction[0] = card;
+            //deckHandler.RemoveFromEnemy(card);
+            //Transform[] transforms = EnemyCardHolder.GetComponentsInChildren<Transform>();
+            //Destroy(transforms[1].gameObject);
+            
+            //get the position on board for token placement
+            //int pos = deckHandler.lastPlayed + card - 1;
+            
+            //set last played card
+            //deckHandler.lastPlayed = card;
+            //deckHandler.playedCards.Add(card);
+            //deckHandler.InstantiatePlayedCard(card);
+            //lastCardImage.sprite = deckHandler.cards[card].GetComponent<Image>().sprite;
+            
+            //PlaceToken(pos, "red", 0);
+        }
+        
+        // //game over?
+        // if (state != GameState.Enemyturn) yield break;
+        //
+        // yield return new WaitForSeconds(1f);
+        //
+        // //reset forcedToPlay here to avoid bug by player spamming the button right before his turn
+        // enemyForcedToPlay = false;
+        // playerBlocking = false;
+        // state = GameState.Playerturn;
+        StartCoroutine(EnemyDecision(vectorAction));
 
     }
 
@@ -439,7 +582,22 @@ public class GameSystem : MonoBehaviour
         enemyTokens.text = (int.Parse(enemyTokens.text) - 1).ToString();
         chatManager.SendToActionLog("Enemy blocking next turn!");
     }
-    
+
+    public void DestroyCardFromPlayerHolder(int card)
+    {
+        Transform[] transforms = EnemyCardHolder.GetComponentsInChildren<Transform>();
+        int i = 0;
+        while (i < transforms.Length)
+        {
+            if (transforms[i].GetComponentInChildren<Image>().name == "Card_" + i.ToString())
+            {
+                Destroy(transforms[1].gameObject);
+                return;
+            }
+
+            i++;
+        }
+    }
 }
 
 
@@ -457,4 +615,15 @@ class Slot
         Count = 0;
         Tokens = new List<GameObject>(3);
     }
+
+    public void ResetSlot()
+    {
+        Color = "none";
+        Count = 0;
+        foreach (GameObject token in Tokens)
+        {
+            Object.Destroy(token);
+        }
+    }
+    
 }

@@ -6,6 +6,7 @@ using UnityEngine.SceneManagement;
 public class PauseMenu : MonoBehaviour
 {
     public static bool GameIsPaused = false;
+    public GameSystem gameSystem;
 
     public GameObject PauseMenuUI;
     // Update is called once per frame
@@ -40,8 +41,9 @@ public class PauseMenu : MonoBehaviour
 
     public void RestartGame()
     {
+        PauseMenuUI.SetActive(false);
         Time.timeScale = 1f;
-        SceneManager.LoadScene(1);
+        gameSystem.ResetGame();
     }
 
     public void Quit()

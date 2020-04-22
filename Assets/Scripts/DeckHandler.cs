@@ -32,6 +32,22 @@ public class DeckHandler : MonoBehaviour
             deck.Add(3);
         }
     }
+
+    public void ResetDeck()
+    {
+        playedCards.Clear();
+        playerHand.Clear();
+        enemyHand.Clear();
+        deck.Clear();
+        for (int i = 0; i < 6; i++)
+        {
+            deck.Add(3);
+        }
+
+        cardsInDeck = 18;
+        lastPlayed = 0;
+        GameSetup();
+    }
     
     //shuffle the deck, cards in hand and last played are not returned to the shuffled deck
     private void shuffle_deck()
