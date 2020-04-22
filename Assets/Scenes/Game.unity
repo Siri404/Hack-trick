@@ -2295,7 +2295,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 997217086}
   m_HandleRect: {fileID: 997217085}
   m_Direction: 2
-  m_Value: 1
+  m_Value: 0
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -4053,8 +4053,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1214993704}
   m_HandleRect: {fileID: 1214993703}
   m_Direction: 0
-  m_Value: -0.00042936884
-  m_Size: 0.9998455
+  m_Value: -0.00042955327
+  m_Size: 0.99984556
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -6135,6 +6135,7 @@ MonoBehaviour:
   - {fileID: 2663325517764499700, guid: 53f3e97ac48d44a47ab61f021465a3d8, type: 3}
   cardHolder: {fileID: 2024537999}
   enemyCardHolder: {fileID: 1686020648}
+  playedCardsHolder: {fileID: 967594338}
   panel: {fileID: 3809411404518972713, guid: 9924db4e47d99964a93d81dd2c486ad0, type: 3}
   gameSystem: {fileID: 328160688}
   chatManager: {fileID: 1000226898}
