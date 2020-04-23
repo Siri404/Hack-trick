@@ -11,18 +11,6 @@ public class PlayerAgent : Agent
     public Player Player { get; set; }
     public Player Opponent { get; set; }
 
-    private void Start()
-    {
-        Player = gameSystem.player1;
-        Opponent = gameSystem.player2;
-    }
-    public override void Initialize()
-    {
-        base.Initialize();
-        Player = gameSystem.player1;
-        Opponent = gameSystem.player2;
-    }
-    
     public override void CollectDiscreteActionMasks(DiscreteActionMasker actionMasker)
     {
         List<int> illegalActions = new List<int>();
@@ -118,21 +106,21 @@ public class PlayerAgent : Agent
         int blocking = Mathf.FloorToInt(vectorAction[1]);
         if (blocking == 1)
         {
-            gameSystem.BlockForPlayer();
+            gameSystem.BlockForEnemy();
             AddReward(penalty);
         }
 
         int forcingPlayerToPlay = Mathf.FloorToInt(vectorAction[2]);
         if (forcingPlayerToPlay == 1)
         {
-            gameSystem.ForceEnemyToPlay();
+            gameSystem.ForcePlayerToPlay();
             AddReward(penalty);
         }
 
         int move = Mathf.FloorToInt(vectorAction[0]);
         if (move == 6)
         {
-            gameSystem.deckHandler.DrawForPlayer1();
+            gameSystem.deckHandler.DrawForPlayer2();
         }
         else
         {
@@ -153,13 +141,13 @@ public class PlayerAgent : Agent
 
                 if (mustDraw)
                 {
-                    gameSystem.deckHandler.DrawForPlayer1();
+                    gameSystem.deckHandler.DrawForPlayer2();
                     return;
                 }
             }
             
-            gameSystem.deckHandler.RemoveFromPlayer1(card);
-            gameSystem.DestroyCardFromPlayerHolder(card);
+            gameSystem.deckHandler.RemoveFromPlayer2(card);
+            gameSystem.DestroyCardFromEnemyHolder();
 
             //get the position on board for token placement
             int pos = gameSystem.deckHandler.lastPlayed + card - 1;
@@ -170,16 +158,20 @@ public class PlayerAgent : Agent
             gameSystem.deckHandler.InstantiatePlayedCard(card);
             gameSystem.lastCardImage.sprite = gameSystem.deckHandler.cards[card].GetComponent<Image>().sprite;
             
-            gameSystem.PlaceToken(pos, Player.Color, 1);
+            gameSystem.PlaceToken(pos, Player.Color, 0);
             newTokensCaptured = int.Parse(Player.CapturedTokens.text) - newTokensCaptured;
             AddReward(newTokensCaptured);
-            gameSystem.state = GameState.Enemyturn;
+            gameSystem.state = GameState.Playerturn;
 
         }
     }
 
     public override void OnEpisodeBegin()
     {
+        if (gameSystem.state == GameState.Enemyturn || gameSystem.state == GameState.Playerturn)
+        {
+            return;
+        }
         if (gameSystem.state == GameState.Lost)
         {
             Opponent.Wins.text = (int.Parse(Opponent.Wins.text) + 1).ToString();

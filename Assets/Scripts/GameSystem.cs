@@ -81,8 +81,8 @@ public class GameSystem : MonoBehaviour
     {
         player1 = new Player(playerTokens, playerTokensCaptured, wonGames, "white" );
         player2 = new Player(enemyTokens, enemyTokensCaptured, lostGames, "red" );
-        playerAgent.Player = player1;
-        playerAgent.Opponent = player2;
+        playerAgent.Player = player2;
+        playerAgent.Opponent = player1;
         //initialize the 9 slots of the board and the slot converter
         for (int i = 0; i < 9; i++)
         {
@@ -139,7 +139,7 @@ public class GameSystem : MonoBehaviour
         {
             chatManager.SendToActionLog("Waiting for player");
             //request decision / player action
-            playerAgent.RequestDecision();
+            //playerAgent.RequestDecision();
             yield return new WaitUntil(() => state != GameState.Playerturn);
         }
 
@@ -179,10 +179,12 @@ public class GameSystem : MonoBehaviour
         //yield return new WaitForSeconds(3f);
         
         //randomAction / request decision
-        EnemyRandomAction();
+        playerAgent.RequestDecision();
+        
+        yield return new WaitUntil(() => state != GameState.Enemyturn);
         
         //game over?
-        if (state != GameState.Enemyturn)
+        if (state != GameState.Playerturn)
         {
             if (state == GameState.Won)
             {
@@ -193,11 +195,7 @@ public class GameSystem : MonoBehaviour
                 playerAgent.AddReward(-10f);
             }
         }
-        else
-        {
-            state = GameState.Playerturn;
-        }
-        
+
         //yield return new WaitForSeconds(1f);
         
         //reset forcedToPlay here to avoid bug by player spamming the button right before his turn
@@ -275,6 +273,7 @@ public class GameSystem : MonoBehaviour
             lastCardImage.sprite = deckHandler.cards[card].GetComponent<Image>().sprite;
             
             PlaceToken(pos, player2.Color, 0);
+            state = GameState.Playerturn;
         }
         
     }
@@ -556,6 +555,19 @@ public class GameSystem : MonoBehaviour
             }
 
             i++;
+        }
+    }
+
+    public void DestroyCardFromEnemyHolder()
+    {
+        Transform[] transforms = EnemyCardHolder.GetComponentsInChildren<Transform>();
+        if (transforms.Length > 1)
+        {
+            Destroy(transforms[1].gameObject);
+        }
+        else
+        {
+            Console.Write("Failed destroy!");
         }
     }
 }
