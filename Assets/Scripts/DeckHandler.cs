@@ -1,14 +1,15 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 using Random = System.Random;
 
 public class DeckHandler : MonoBehaviour
 {
     private List<int> deck = new List<int>(6);
-    public List<int> playerHand = new List<int>(4);
-    public List<int> enemyHand = new List<int>(4);
+    public Player player1;
+    public Player player2;
     private int cardsInDeck = 18;
     private Random generator = new Random();
     
@@ -17,8 +18,10 @@ public class DeckHandler : MonoBehaviour
     public Image lastCardImage;
 
     public List<GameObject> cards;
-    public Transform cardHolder;
-    public Transform enemyCardHolder;
+    [FormerlySerializedAs("cardHolder")] 
+    public Transform player1CardHolder;
+    [FormerlySerializedAs("enemyCardHolder")] 
+    public Transform player2CardHolder;
     public Transform playedCardsHolder;
     public GameObject panel;
     public GameSystem gameSystem;
@@ -31,13 +34,16 @@ public class DeckHandler : MonoBehaviour
         {
             deck.Add(3);
         }
+
+        player1 = gameSystem.player1;
+        player2 = gameSystem.player2;
     }
 
     public void ResetDeck()
     {
         playedCards.Clear();
-        playerHand.Clear();
-        enemyHand.Clear();
+        player1.cardsInHand.Clear();
+        player2.cardsInHand.Clear();
         deck.Clear();
         for (int i = 0; i < 6; i++)
         {
@@ -64,15 +70,17 @@ public class DeckHandler : MonoBehaviour
 
         cardsInDeck = 18;
 
-        for (int i = 0; i < playerHand.Count; i++)
+        //remove cards that player 1 holds
+        for (int i = 0; i < player1.cardsInHand.Count; i++)
         {
-            deck[playerHand[i]]--;
+            deck[player1.cardsInHand[i]]--;
             cardsInDeck--;
         }
 
-        for (int i = 0; i < enemyHand.Count; i++)
+        //remove cards that player 2 holds
+        for (int i = 0; i < player2.cardsInHand.Count; i++)
         {
-            deck[enemyHand[i]]--;
+            deck[player2.cardsInHand[i]]--;
             cardsInDeck--;
         }
 
@@ -85,11 +93,12 @@ public class DeckHandler : MonoBehaviour
         }
     }
 
-    public void DrawForEnemy()
+    //draw for player 2 (no human error check)
+    public void DrawForPlayer2()
     {
         if(gameSystem.state != GameState.Enemyturn) return;
         
-        if (enemyHand.Count == 4)
+        if (player2.cardsInHand.Count == 4)
         {
             //can't have more than 4 cards in hand
             return;
@@ -109,23 +118,23 @@ public class DeckHandler : MonoBehaviour
 
         deck[card]--;
         cardsInDeck--;
-        enemyHand.Add(card);
-        Instantiate(cards[6], Instantiate(panel, enemyCardHolder).transform);
+        player2.cardsInHand.Add(card);
+        Instantiate(cards[6], Instantiate(panel, player2CardHolder).transform);
     }
 
-    //draw a card for the player whose turn is currently ongoing
-    public void DrawForPlayer()
+    //draw a card for the player 1 (human player)
+    public void DrawForPlayer1()
     {
         if (gameSystem.state != GameState.Playerturn) return;
-        if (gameSystem.playerForcedToPlay && !(playerHand.Count == 1 && playerHand[0] == lastPlayed ||
-                                               playerHand.Count == 2 && playerHand[0] == lastPlayed &&
-                                               playerHand[1] == lastPlayed))
+        if (player1.ForcedToPlay && !(player1.cardsInHand.Count == 1 && player1.cardsInHand[0] == lastPlayed ||
+                                               player1.cardsInHand.Count == 2 && player1.cardsInHand[0] == lastPlayed &&
+                                               player1.cardsInHand[1] == lastPlayed))
         {
             chatManager.SendToActionLog("You are forced to play a card this turn!");
             return;
         }
 
-        if (playerHand.Count == 4)
+        if (player1.cardsInHand.Count == 4)
         {
             //can't have more than 4 cards in hand
             return;
@@ -145,41 +154,41 @@ public class DeckHandler : MonoBehaviour
 
         deck[card]--;
         cardsInDeck--;
-        playerHand.Add(card);
+        player1.cardsInHand.Add(card);
         //ui draw
-        Instantiate(cards[card], Instantiate(panel, cardHolder).transform);
+        Instantiate(cards[card], Instantiate(panel, player1CardHolder).transform);
         gameSystem.state = GameState.Enemyturn;
     }
 
-    public void RemoveFromPlayer(int card)
+    public void RemoveFromPlayer1(int card)
     {
-        playerHand.Remove(card);
+        player1.cardsInHand.Remove(card);
     }
 
-    public void RemoveFromEnemy(int card)
+    public void RemoveFromPlayer2(int card)
     {
-        enemyHand.Remove(card);
+        player2.cardsInHand.Remove(card);
     }
 
     //setup for start of game
     public void GameSetup()
     {
         //the starting player has 3 cards, the other has 4
-        int playerCardCount, enemyCardCount;
+        int player1CardCount, player2CardCount;
         if (gameSystem.state == GameState.Playerturn)
         {
-            playerCardCount = 3;
-            enemyCardCount = 4;
+            player1CardCount = 3;
+            player2CardCount = 4;
         }
         else
         {
-            playerCardCount = 4;
-            enemyCardCount = 3;
+            player1CardCount = 4;
+            player2CardCount = 3;
         }
         
-        //draw for opponent
+        //draw for player 2
         int card;
-        for (int i = 0; i < enemyCardCount; i++)
+        for (int i = 0; i < player2CardCount; i++)
         {
             card = generator.Next(0, 6);
             while (deck[card] == 0)
@@ -189,12 +198,12 @@ public class DeckHandler : MonoBehaviour
 
             deck[card]--;
             cardsInDeck--;
-            enemyHand.Add(card);
-            Instantiate(cards[6], Instantiate(panel, enemyCardHolder).transform);
+            player2.cardsInHand.Add(card);
+            Instantiate(cards[6], Instantiate(panel, player2CardHolder).transform);
         }
 
-        //draw for player
-        for (int i = 0; i < playerCardCount; i++)
+        //draw for player 1
+        for (int i = 0; i < player1CardCount; i++)
         {
             card = generator.Next(0, 6);
             while (deck[card] == 0)
@@ -204,9 +213,9 @@ public class DeckHandler : MonoBehaviour
 
             deck[card]--;
             cardsInDeck--;
-            playerHand.Add(card);
+            player1.cardsInHand.Add(card);
             //ui draw
-            Instantiate(cards[card], Instantiate(panel, cardHolder).transform);
+            Instantiate(cards[card], Instantiate(panel, player1CardHolder).transform);
         }
         
         //draw play card
@@ -223,7 +232,7 @@ public class DeckHandler : MonoBehaviour
         cardsInDeck--;
         lastCardImage.sprite = cards[card].GetComponent<Image>().sprite;
         
-        chatManager.SendToActionLog("Enemy card total is: " + enemyHand.Sum());
+        chatManager.SendToActionLog("Enemy card total is: " + player2.cardsInHand.Sum());
 
     }
     
