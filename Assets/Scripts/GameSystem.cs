@@ -79,10 +79,12 @@ public class GameSystem : MonoBehaviour
     }
     private void Start()
     {
-        player1 = new Player(playerTokens, playerTokensCaptured, wonGames, "white" );
-        player2 = new Player(enemyTokens, enemyTokensCaptured, lostGames, "red" );
-        playerAgent.Player = player2;
-        playerAgent.Opponent = player1;
+        player1 = new Player(playerTokens, playerTokensCaptured, wonGames, "white", 1 );
+        player2 = new Player(enemyTokens, enemyTokensCaptured, lostGames, "red", 0 );
+        playerAgent.Player = player1;
+        playerAgent.Opponent = player2;
+        deckHandler.player1 = player1;
+        deckHandler.player2 = player2;
         //initialize the 9 slots of the board and the slot converter
         for (int i = 0; i < 9; i++)
         {
@@ -139,7 +141,7 @@ public class GameSystem : MonoBehaviour
         {
             chatManager.SendToActionLog("Waiting for player");
             //request decision / player action
-            //playerAgent.RequestDecision();
+            playerAgent.RequestDecision();
             yield return new WaitUntil(() => state != GameState.Playerturn);
         }
 
@@ -179,7 +181,7 @@ public class GameSystem : MonoBehaviour
         //yield return new WaitForSeconds(3f);
         
         //randomAction / request decision
-        playerAgent.RequestDecision();
+        EnemyRandomAction();
         
         yield return new WaitUntil(() => state != GameState.Enemyturn);
         
@@ -608,15 +610,17 @@ public class Player
     public bool Blocking;
     public List<int> cardsInHand = new List<int>(4);
     public string Color;
+    public int TokenType;
     public TMP_Text Tokens;
     public TMP_Text CapturedTokens;
     public TMP_Text Wins;
 
-    public Player(TMP_Text tokens, TMP_Text capturedTokens, TMP_Text wins, string color)
+    public Player(TMP_Text tokens, TMP_Text capturedTokens, TMP_Text wins, string color, int tokenType)
     {
         Tokens = tokens;
         CapturedTokens = capturedTokens;
         Wins = wins;
         Color = color;
+        TokenType = tokenType;
     }
 }

@@ -120,6 +120,7 @@ public class DeckHandler : MonoBehaviour
         cardsInDeck--;
         player2.cardsInHand.Add(card);
         Instantiate(cards[6], Instantiate(panel, player2CardHolder).transform);
+        gameSystem.state = GameState.Playerturn;
     }
 
     //draw a card for the player 1 (human player)
