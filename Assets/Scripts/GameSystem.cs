@@ -2,7 +2,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using MLAgents;
+using MLAgents.Sensors;
 using TMPro;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
@@ -10,7 +13,7 @@ using Object = UnityEngine.Object;
 using Random = System.Random;
 
 public enum GameState { Start, Playerturn, Enemyturn, Won, Lost}
-public class GameSystem : MonoBehaviour
+public class GameSystem : Agent
 {
     [FormerlySerializedAs("slots")] public List<Transform> slotTransforms;
     private readonly List<Slot> _slots = new List<Slot>(9);
@@ -38,6 +41,11 @@ public class GameSystem : MonoBehaviour
     private bool playerBlocking;
     private bool enemyBlocking;
     private readonly Random _random = new Random();
+
+    private float penalty = 1f;
+    public TMP_Text lostGames;
+    public TMP_Text wonGames;
+
     
     public void ResetGame()
     {
@@ -88,7 +96,7 @@ public class GameSystem : MonoBehaviour
         _slotConverter.Add(1);
         
         state = GameState.Start;
-        StartCoroutine(SetupGame());
+        //StartCoroutine(SetupGame());
     }
 
     public IEnumerator SetupGame()
@@ -104,7 +112,7 @@ public class GameSystem : MonoBehaviour
         enemyBlocking = false;
         alreadyAsked = false;
         
-        yield return new WaitForSeconds(2f);
+        yield return new WaitForSeconds(0f);
         
         //coin flip to decide starting player
         if (_random.Next(0, 2) == 1)
@@ -127,7 +135,8 @@ public class GameSystem : MonoBehaviour
         while (state == GameState.Playerturn)
         {
             chatManager.SendToActionLog("Waiting for player");
-            yield return new WaitUntil(() => state == GameState.Enemyturn || state == GameState.Start);
+            RequestDecision();
+            yield return new WaitUntil(() => state != GameState.Playerturn);
         }
 
         //if state is start -> game was reset, must not start EnemyTurn again
@@ -135,27 +144,146 @@ public class GameSystem : MonoBehaviour
         {
             StartCoroutine(EnemyTurn());
         }
+        else
+        {
+            EndEpisode();
+        }
     }
     
-    IEnumerator PlayerDecision(float[] vectorAction)
+    public override void CollectDiscreteActionMasks(DiscreteActionMasker actionMasker)
     {
-        if (vectorAction[1] == 1f)
+        List<int> illegalActions = new List<int>();
+        for (int i = 0; i < 6; i++)
+        {
+            if (!deckHandler.playerHand.Contains(i))
+            {
+                illegalActions.Add(i);
+            }
+        }
+
+        if (!illegalActions.Contains(deckHandler.lastPlayed))
+        {
+            illegalActions.Add(deckHandler.lastPlayed);
+        }
+
+        if (deckHandler.playerHand.Count == 4)
+        {
+            illegalActions.Add(6);
+        }
+
+        if (playerForcedToPlay && !illegalActions.Contains(6))
+        {
+            bool canPlay;
+
+            if (deckHandler.playerHand.Count == 1 && deckHandler.playerHand[0] == deckHandler.lastPlayed || 
+                deckHandler.playerHand.Count == 2 && deckHandler.playerHand[0] == deckHandler.lastPlayed 
+                                                  && deckHandler.playerHand[1] == deckHandler.lastPlayed)
+            {
+                canPlay = false;
+            }
+            else
+            {
+                canPlay = true;
+            }
+
+            if (canPlay)
+            {
+                illegalActions.Add(6);
+            }
+        }
+
+        actionMasker.SetMask(0, illegalActions);
+        if (int.Parse(playerTokens.text) < 2)
+        {
+            actionMasker.SetMask(1, new []{1});
+            actionMasker.SetMask(2, new []{1});
+        }
+
+        if (deckHandler.enemyHand.Count == 0 || deckHandler.enemyHand.Count == 4 || enemyBlocking)
+        {
+            actionMasker.SetMask(2, new []{1});
+        }
+    }
+    
+    public override void CollectObservations(VectorSensor sensor)
+    {
+        float[] board = new float[9];
+        for (int i = 0; i < 9; i++)
+        {
+            if (_slots[i].Color.Equals("none"))
+            {
+                board[i] = 0f;
+            }
+            else if(_slots[i].Color.Equals("red"))
+            {
+                board[i] = _slots.Count;
+            }
+            else
+            {
+                board[i] = -1 * _slots.Count;
+            }
+        }
+        //9 floats
+        sensor.AddObservation(board);
+        //1 float
+        sensor.AddObservation(float.Parse(playerTokens.text));
+        //1 float
+        sensor.AddObservation(float.Parse(playerTokensCaptured.text));
+        //1 float
+        sensor.AddObservation(float.Parse(enemyTokens.text));
+        //1 float
+        sensor.AddObservation(float.Parse(enemyTokensCaptured.text));
+        //1 float
+        sensor.AddObservation(deckHandler.enemyHand.Count);
+        
+        //9+1+1+1+1+1 = 14 values
+        
+    }
+    public override void OnActionReceived(float[] vectorAction)
+    {
+        int blocking = Mathf.FloorToInt(vectorAction[1]);
+        if (blocking == 1)
         {
             BlockForPlayer();
+            AddReward(penalty);
         }
 
-        if (vectorAction[2] == 1f)
+        int forcingPlayerToPlay = Mathf.FloorToInt(vectorAction[2]);
+        if (forcingPlayerToPlay == 1)
         {
             ForceEnemyToPlay();
+            AddReward(penalty);
         }
 
-        if (vectorAction[0] == -1)
+        int move = Mathf.FloorToInt(vectorAction[0]);
+        if (move == 6)
         {
             deckHandler.DrawForPlayer();
         }
         else
         {
+            int newTokensCaptured = int.Parse(playerTokensCaptured.text);
             int card = (int) vectorAction[0];
+            if (!deckHandler.playerHand.Contains(card) || card == deckHandler.lastPlayed)
+            {
+                bool mustDraw = true;
+                for (int i = 0; i < deckHandler.playerHand.Count; i++)
+                {
+                    if (deckHandler.playerHand[i] != deckHandler.lastPlayed)
+                    {
+                        card = deckHandler.playerHand[i];
+                        mustDraw = false;
+                        break;
+                    }
+                }
+
+                if (mustDraw)
+                {
+                    deckHandler.DrawForPlayer();
+                    return;
+                }
+            }
+            
             deckHandler.RemoveFromPlayer(card);
             DestroyCardFromPlayerHolder(card);
 
@@ -169,73 +297,44 @@ public class GameSystem : MonoBehaviour
             lastCardImage.sprite = deckHandler.cards[card].GetComponent<Image>().sprite;
             
             PlaceToken(pos, "white", 1);
+            newTokensCaptured = int.Parse(playerTokensCaptured.text) - newTokensCaptured;
+            AddReward(newTokensCaptured);
         }
         //game over?
-        if (state != GameState.Playerturn) yield break;
-        
-        yield return new WaitForSeconds(1f);
-        
+        if (state != GameState.Playerturn)
+        {
+            if (state == GameState.Won)
+            {
+                AddReward(10f);
+            }
+            else
+            {
+                AddReward(-10f);
+            }
+            return;
+        }
+
         playerForcedToPlay = false;
         enemyBlocking = false;
         state = GameState.Enemyturn;
-        StartCoroutine(EnemyTurn());
     }
 
-    IEnumerator EnemyDecision(float[] vectorAction)
+    public override void OnEpisodeBegin()
     {
-        if (vectorAction[1] == 1f)
+        if (state == GameState.Lost)
         {
-            BlockForEnemy();
+            lostGames.text = (int.Parse(lostGames.text) + 1).ToString();
         }
-
-        if (vectorAction[2] == 1f)
+        else if(state == GameState.Won)
         {
-            ForcePlayerToPlay();
+            wonGames.text = (int.Parse(wonGames.text) + 1).ToString();
         }
-
-        if (vectorAction[0] == -1)
-        {
-            deckHandler.DrawForEnemy();
-        }
-        else
-        {
-            int card = (int) vectorAction[0];
-            deckHandler.RemoveFromEnemy(card);
-            Transform[] transforms = EnemyCardHolder.GetComponentsInChildren<Transform>();
-            Destroy(transforms[1].gameObject);
-            
-            //get the position on board for token placement
-            int pos = deckHandler.lastPlayed + card - 1;
-            
-            //set last played card
-            deckHandler.lastPlayed = card;
-            deckHandler.playedCards.Add(card);
-            deckHandler.InstantiatePlayedCard(card);
-            lastCardImage.sprite = deckHandler.cards[card].GetComponent<Image>().sprite;
-            
-            PlaceToken(pos, "red", 0);
-        }
-        //game over?
-        if (state != GameState.Enemyturn) yield break;
-        
-        yield return new WaitForSeconds(1f);
-        
-        //reset forcedToPlay here to avoid bug by player spamming the button right before his turn
-        enemyForcedToPlay = false;
-        playerBlocking = false;
-        state = GameState.Playerturn;
-        StartCoroutine(PlayerTurn());
+        ResetGame();
+        penalty = Academy.Instance.FloatProperties.GetPropertyWithDefault("penalty", 1f);
     }
 
     IEnumerator EnemyTurn()
     {
-        //setup the vector action
-        float[] vectorAction = new float[3];
-        for (int i = 0; i < 3; i++)
-        {
-            vectorAction[i] = 0;
-        }
-        
         //reset forcedToPlay after player turn is over
         playerForcedToPlay = false;
         enemyBlocking = false;
@@ -244,18 +343,16 @@ public class GameSystem : MonoBehaviour
         if (state != GameState.Enemyturn) yield break;
         
         chatManager.SendToActionLog("Enemy turn");
-        yield return new WaitForSeconds(3f);
+        //yield return new WaitForSeconds(3f);
 
         if (_random.Next(0, 7) == 0)
         {
-            vectorAction[1] = 1f;
-            //BlockForEnemy();
+            BlockForEnemy();
         }
 
         if (_random.Next(0, 6) == 0)
         {
-            vectorAction[2] = 1;
-            //ForcePlayerToPlay();
+            ForcePlayerToPlay();
         }
 
         if (deckHandler.enemyHand.Count == 1 && deckHandler.enemyHand[0] == deckHandler.lastPlayed || 
@@ -271,8 +368,7 @@ public class GameSystem : MonoBehaviour
                 chatManager.SendToActionLog("Enemy draws a card");
             }
 
-            vectorAction[0] = -1f;
-            //deckHandler.DrawForEnemy();
+            deckHandler.DrawForEnemy();
             
         }
         
@@ -280,8 +376,7 @@ public class GameSystem : MonoBehaviour
         else if (deckHandler.enemyHand.Count < 4 && _random.Next(0,2) == 1 && enemyForcedToPlay == false || deckHandler.enemyHand.Count == 0)
         {
             chatManager.SendToActionLog("Enemy draws a card");
-            vectorAction[0] = -1f;
-            //deckHandler.DrawForEnemy();
+            deckHandler.DrawForEnemy();
         }
         else
         {
@@ -293,33 +388,51 @@ public class GameSystem : MonoBehaviour
                 card = deckHandler.enemyHand[_random.Next(0, deckHandler.enemyHand.Count)];
             }
 
-            vectorAction[0] = card;
-            //deckHandler.RemoveFromEnemy(card);
-            //Transform[] transforms = EnemyCardHolder.GetComponentsInChildren<Transform>();
-            //Destroy(transforms[1].gameObject);
+            deckHandler.RemoveFromEnemy(card);
+            Transform[] transforms = EnemyCardHolder.GetComponentsInChildren<Transform>();
+            if (transforms.Length > 1)
+            {
+                Destroy(transforms[1].gameObject);
+            }
+            else
+            {
+                Console.Write("Failed destroy!");
+            }
+            // get the position on board for token placement
+            int pos = deckHandler.lastPlayed + card - 1;
             
-            //get the position on board for token placement
-            //int pos = deckHandler.lastPlayed + card - 1;
+            // set last played card
+            deckHandler.lastPlayed = card;
+            deckHandler.playedCards.Add(card);
+            deckHandler.InstantiatePlayedCard(card);
+            lastCardImage.sprite = deckHandler.cards[card].GetComponent<Image>().sprite;
             
-            //set last played card
-            //deckHandler.lastPlayed = card;
-            //deckHandler.playedCards.Add(card);
-            //deckHandler.InstantiatePlayedCard(card);
-            //lastCardImage.sprite = deckHandler.cards[card].GetComponent<Image>().sprite;
-            
-            //PlaceToken(pos, "red", 0);
+            PlaceToken(pos, "red", 0);
         }
         
-        // //game over?
-        // if (state != GameState.Enemyturn) yield break;
-        //
-        // yield return new WaitForSeconds(1f);
-        //
-        // //reset forcedToPlay here to avoid bug by player spamming the button right before his turn
-        // enemyForcedToPlay = false;
-        // playerBlocking = false;
-        // state = GameState.Playerturn;
-        StartCoroutine(EnemyDecision(vectorAction));
+        //game over?
+        if (state != GameState.Enemyturn)
+        {
+            if (state == GameState.Won)
+            {
+                AddReward(10f);
+            }
+            else
+            {
+                AddReward(-10f);
+            }
+        }
+        else
+        {
+            state = GameState.Playerturn;
+        }
+        
+        //yield return new WaitForSeconds(1f);
+        
+        //reset forcedToPlay here to avoid bug by player spamming the button right before his turn
+        enemyForcedToPlay = false;
+        playerBlocking = false;
+        StartCoroutine(PlayerTurn());
 
     }
 
@@ -585,11 +698,11 @@ public class GameSystem : MonoBehaviour
 
     public void DestroyCardFromPlayerHolder(int card)
     {
-        Transform[] transforms = EnemyCardHolder.GetComponentsInChildren<Transform>();
+        Transform[] transforms = PlayerCardHolder.GetComponentsInChildren<Transform>();
         int i = 0;
         while (i < transforms.Length)
         {
-            if (transforms[i].GetComponentInChildren<Image>().name == "Card_" + i.ToString())
+            if (transforms[i].GetComponentInChildren<Image>().name.Contains("Card_" + card))
             {
                 Destroy(transforms[1].gameObject);
                 return;
@@ -606,7 +719,7 @@ public class GameSystem : MonoBehaviour
 class Slot
 {
     public string Color { get; set; }
-    public List<GameObject> Tokens { get; }
+    public List<GameObject> Tokens { get; set; }
     public int Count { get; set; }
 
     public Slot()
@@ -622,8 +735,10 @@ class Slot
         Count = 0;
         foreach (GameObject token in Tokens)
         {
+            token.SetActive(false);
             Object.Destroy(token);
         }
+        Tokens = new List<GameObject>(3);
     }
     
 }
