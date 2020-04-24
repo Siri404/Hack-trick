@@ -22,8 +22,9 @@ public class ItemDropHandler : MonoBehaviour, IDropHandler
                 chatManager.SendToActionLog("Can't play same card!");
                 return;
             }
-            deckHandler.RemoveFromPlayer(card);
-
+            gameSystem.action = card;
+            deckHandler.RemoveFromPlayer1(card);
+            
             //get the position on board for token placement
             int pos = deckHandler.lastPlayed + card - 1;
             
@@ -36,8 +37,6 @@ public class ItemDropHandler : MonoBehaviour, IDropHandler
             //disable played card and it's parent slot
             Destroy(ItemDragHandler.ObjectBeingDragged.transform.parent.gameObject);
             Destroy(ItemDragHandler.ObjectBeingDragged);
-            //ItemDragHandler.ObjectBeingDragged.SetActive(false);
-            //ItemDragHandler.ObjectBeingDragged.transform.parent.gameObject.SetActive(false);
 
             //place token on board & set enemy turn
             gameSystem.PlaceToken(pos, "white", 1);
