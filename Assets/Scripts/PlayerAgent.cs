@@ -93,7 +93,7 @@ public class PlayerAgent : Agent
         //1 float
         sensor.AddObservation(float.Parse(Opponent.Tokens.text));
         //1 float
-        sensor.AddObservation(float.Parse(Opponent.CapturedTokens.text));
+        sensor.AddObservation(Player.cardsInHand.Count);
         //1 float
         sensor.AddObservation(Opponent.cardsInHand.Count);
         
@@ -113,25 +113,54 @@ public class PlayerAgent : Agent
 
     public override void OnActionReceived(float[] vectorAction)
     {
-        if (gameSystem.state != GameState.Playerturn) return;
+        if (Player.Color == "white" && gameSystem.state != GameState.Playerturn)
+        {
+            return;
+        }
+
+        if (Player.Color == "red" && gameSystem.state != GameState.Enemyturn)
+        {
+            return;
+        }
         int blocking = Mathf.FloorToInt(vectorAction[1]);
         if (blocking == 1)
         {
-            gameSystem.BlockForPlayer();
+            if (Player.Color == "white")
+            {
+                gameSystem.BlockForPlayer();
+            }
+            else
+            {
+                gameSystem.BlockForEnemy();
+            }
             AddReward(penalty);
         }
 
         int forcingPlayerToPlay = Mathf.FloorToInt(vectorAction[2]);
         if (forcingPlayerToPlay == 1)
         {
-            gameSystem.ForceEnemyToPlay();
+            if (Player.Color == "white")
+            {
+                gameSystem.ForceEnemyToPlay();
+            }
+            else
+            {
+                gameSystem.ForcePlayerToPlay();
+            }
             AddReward(penalty);
         }
 
         int move = Mathf.FloorToInt(vectorAction[0]);
         if (move == 6 && Player.cardsInHand.Count < 4 && !Player.ForcedToPlay)
         {
-            gameSystem.deckHandler.DrawForPlayer1();
+            if (Player.Color == "white")
+            {
+                gameSystem.deckHandler.DrawForPlayer1();
+            }
+            else
+            {
+                gameSystem.deckHandler.DrawForPlayer2();
+            }   
         }
         else
         {
@@ -152,14 +181,29 @@ public class PlayerAgent : Agent
 
                 if (mustDraw)
                 {
-                    gameSystem.deckHandler.DrawForPlayer1();
+                    if (Player.Color == "white")
+                    {
+                        gameSystem.deckHandler.DrawForPlayer1();
+                    }
+                    else
+                    {
+                        gameSystem.deckHandler.DrawForPlayer2();
+                    }
                     return;
                 }
             }
             
             //remove & destroy played card
-            gameSystem.deckHandler.RemoveFromPlayer1(card);
-            gameSystem.DestroyCardFromPlayerHolder(card);
+            if (Player.Color == "white")
+            {
+                gameSystem.deckHandler.RemoveFromPlayer1(card);
+                gameSystem.DestroyCardFromPlayerHolder(card);
+            }
+            else
+            {
+                gameSystem.deckHandler.RemoveFromPlayer2(card);
+                gameSystem.DestroyCardFromEnemyHolder();
+            }
 
             //get the position on board for token placement
             int pos = gameSystem.deckHandler.lastPlayed + card - 1;
@@ -173,9 +217,19 @@ public class PlayerAgent : Agent
             gameSystem.PlaceToken(pos, Player.Color, Player.TokenType);
             newTokensCaptured = int.Parse(Player.CapturedTokens.text) - newTokensCaptured;
             AddReward(newTokensCaptured);
-            if (gameSystem.state == GameState.Playerturn)
+            if (Player.Color == "white")
             {
-                gameSystem.state = GameState.Enemyturn;
+                if (gameSystem.state == GameState.Playerturn)
+                {
+                    gameSystem.state = GameState.Enemyturn;
+                }
+            }
+            else
+            {
+                if (gameSystem.state == GameState.Enemyturn)
+                {
+                    gameSystem.state = GameState.Playerturn;
+                }
             }
         }
     }
@@ -186,16 +240,20 @@ public class PlayerAgent : Agent
         // {
         //     return;
         // }
-        if (gameSystem.state == GameState.Lost)
+
+        if (gameSystem.state!=GameState.Start && Player.Color == "red")
         {
-            Opponent.Wins.text = (int.Parse(Opponent.Wins.text) + 1).ToString();
+            if(gameSystem.state == GameState.Won)
+            {
+                Player.Wins.text = (int.Parse(Player.Wins.text) + 1).ToString();
+            }
+            else
+            {
+                Opponent.Wins.text = (int.Parse(Opponent.Wins.text) + 1).ToString();
+            }
+            gameSystem.ResetGame();
         }
-        else if(gameSystem.state == GameState.Won)
-        {
-            Player.Wins.text = (int.Parse(Player.Wins.text) + 1).ToString();
-        }
-        gameSystem.ResetGame();
-        penalty = Academy.Instance.FloatProperties.GetPropertyWithDefault("penalty", 2.5f);
+        penalty = Academy.Instance.FloatProperties.GetPropertyWithDefault("penalty", 3f);
     }
 
 }

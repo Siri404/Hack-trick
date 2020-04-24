@@ -43,7 +43,8 @@ public class GameSystem : MonoBehaviour
     public TMP_Text lostGames;
     public TMP_Text wonGames;
 
-    public PlayerAgent playerAgent;
+    public PlayerAgent playerAgent1;
+    public PlayerAgent playerAgent2;
 
     public float action = 0f;
 
@@ -83,8 +84,10 @@ public class GameSystem : MonoBehaviour
     {
         player1 = new Player(playerTokens, playerTokensCaptured, wonGames, "white", 1 );
         player2 = new Player(enemyTokens, enemyTokensCaptured, lostGames, "red", 0 );
-        playerAgent.Player = player1;
-        playerAgent.Opponent = player2;
+        playerAgent1.Player = player1;
+        playerAgent1.Opponent = player2;
+        playerAgent2.Player = player2;
+        playerAgent2.Opponent = player1;
         deckHandler.player1 = player1;
         deckHandler.player2 = player2;
         //initialize the 9 slots of the board and the slot converter
@@ -103,7 +106,7 @@ public class GameSystem : MonoBehaviour
         _slotConverter.Add(1);
         
         state = GameState.Start;
-        //StartCoroutine(SetupGame());
+        StartCoroutine(SetupGame());
     }
 
     public IEnumerator SetupGame()
@@ -144,7 +147,7 @@ public class GameSystem : MonoBehaviour
             chatManager.SendToActionLog("Waiting for player");
             //request decision / player action
             //yield return new WaitForSeconds(3f);
-            playerAgent.RequestDecision();
+            //playerAgent1.RequestDecision();
 
             yield return new WaitUntil(() => state != GameState.Playerturn);
         }
@@ -162,14 +165,17 @@ public class GameSystem : MonoBehaviour
         {
             if (state == GameState.Won)
             {
-                playerAgent.AddReward(10f);
+                playerAgent1.SetReward(10f);
+                playerAgent2.SetReward(-10f);
             }
             else
             {
-                playerAgent.AddReward(-10f);
+                playerAgent1.SetReward(-10f);
+                playerAgent2.SetReward(10f);
             }
-            //yield return new WaitForSeconds(7f);
-            playerAgent.EndEpisode();
+            yield return new WaitForSeconds(7f);
+            playerAgent1.EndEpisode();
+            //playerAgent2.EndEpisode();
         }
     }
     
@@ -183,10 +189,11 @@ public class GameSystem : MonoBehaviour
         if (state != GameState.Enemyturn) yield break;
         
         chatManager.SendToActionLog("Enemy turn");
-        //yield return new WaitForSeconds(3f);
+        yield return new WaitForSeconds(3f);
         
         //randomAction / request decision
-        EnemyRandomAction();
+        playerAgent2.RequestDecision();
+        //EnemyRandomAction();
         
         yield return new WaitUntil(() => state != GameState.Enemyturn);
         
@@ -195,11 +202,13 @@ public class GameSystem : MonoBehaviour
         {
             if (state == GameState.Won)
             {
-                playerAgent.AddReward(10f);
+                //playerAgent1.SetReward(10f);
+                //playerAgent2.SetReward(-10f);
             }
             else
             {
-                playerAgent.AddReward(-10f);
+                //playerAgent1.SetReward(-10f);
+                //playerAgent2.SetReward(10f);
             }
         }
 
