@@ -153,6 +153,8 @@ public class DeckHandler : MonoBehaviour
             card = generator.Next(0, 6);
         }
 
+        gameSystem.action = 6f;
+
         deck[card]--;
         cardsInDeck--;
         player1.cardsInHand.Add(card);

@@ -45,6 +45,8 @@ public class GameSystem : MonoBehaviour
 
     public PlayerAgent playerAgent;
 
+    public float action = 0f;
+
     
     public void ResetGame()
     {
@@ -141,7 +143,9 @@ public class GameSystem : MonoBehaviour
         {
             chatManager.SendToActionLog("Waiting for player");
             //request decision / player action
+            //yield return new WaitForSeconds(3f);
             playerAgent.RequestDecision();
+
             yield return new WaitUntil(() => state != GameState.Playerturn);
         }
 
@@ -164,6 +168,7 @@ public class GameSystem : MonoBehaviour
             {
                 playerAgent.AddReward(-10f);
             }
+            //yield return new WaitForSeconds(7f);
             playerAgent.EndEpisode();
         }
     }
@@ -275,7 +280,10 @@ public class GameSystem : MonoBehaviour
             lastCardImage.sprite = deckHandler.cards[card].GetComponent<Image>().sprite;
             
             PlaceToken(pos, player2.Color, 0);
-            state = GameState.Playerturn;
+            if (state == GameState.Enemyturn)
+            {
+                state = GameState.Playerturn;
+            }
         }
         
     }
@@ -428,7 +436,7 @@ public class GameSystem : MonoBehaviour
             chatManager.SendToActionLog("You Won!");
             state = GameState.Won;
             gameOver.GameOverDialogue();
-
+            return;
         }
         
         if (Slots[_slotConverter[2]].Color == "red" && Slots[_slotConverter[4]].Color == "red" 
@@ -437,6 +445,7 @@ public class GameSystem : MonoBehaviour
             chatManager.SendToActionLog("You Lost!");
             state = GameState.Lost;
             gameOver.GameOverDialogue();
+            return;
         }
         if (int.Parse(enemyTokens.text) == 0)
         {
@@ -552,7 +561,7 @@ public class GameSystem : MonoBehaviour
         {
             if (transforms[i].GetComponentInChildren<Image>().name.Contains("Card_" + card))
             {
-                Destroy(transforms[1].gameObject);
+                Destroy(transforms[i].parent.gameObject);
                 return;
             }
 

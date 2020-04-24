@@ -100,9 +100,20 @@ public class PlayerAgent : Agent
         //9+1+1+1+1+1 = 14 values
         
     }
-    
+
+    public override float[] Heuristic()
+    {
+        float blocking = 0f;
+        float forcing = 0f;
+        float action = gameSystem.action;
+
+        
+        return new float[]{action, blocking, forcing};
+    }
+
     public override void OnActionReceived(float[] vectorAction)
     {
+        if (gameSystem.state != GameState.Playerturn) return;
         int blocking = Mathf.FloorToInt(vectorAction[1]);
         if (blocking == 1)
         {
@@ -118,7 +129,7 @@ public class PlayerAgent : Agent
         }
 
         int move = Mathf.FloorToInt(vectorAction[0]);
-        if (move == 6 && Player.cardsInHand.Count < 4)
+        if (move == 6 && Player.cardsInHand.Count < 4 && !Player.ForcedToPlay)
         {
             gameSystem.deckHandler.DrawForPlayer1();
         }
@@ -165,7 +176,6 @@ public class PlayerAgent : Agent
             if (gameSystem.state == GameState.Playerturn)
             {
                 gameSystem.state = GameState.Enemyturn;
-
             }
         }
     }

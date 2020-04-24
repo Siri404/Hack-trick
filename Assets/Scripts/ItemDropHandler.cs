@@ -22,8 +22,9 @@ public class ItemDropHandler : MonoBehaviour, IDropHandler
                 chatManager.SendToActionLog("Can't play same card!");
                 return;
             }
+            gameSystem.action = card;
             deckHandler.RemoveFromPlayer1(card);
-
+            
             //get the position on board for token placement
             int pos = deckHandler.lastPlayed + card - 1;
             
