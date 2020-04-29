@@ -120,6 +120,7 @@ public class DeckHandler : MonoBehaviour
         cardsInDeck--;
         player2.cardsInHand.Add(card);
         Instantiate(cards[6], Instantiate(panel, player2CardHolder).transform);
+        chatManager.SendToActionLog("Enemy draws a card");
         gameSystem.state = GameState.Playerturn;
     }
 
@@ -152,14 +153,13 @@ public class DeckHandler : MonoBehaviour
         {
             card = generator.Next(0, 6);
         }
-
-        gameSystem.action = 6f;
-
+        
         deck[card]--;
         cardsInDeck--;
         player1.cardsInHand.Add(card);
         //ui draw
         Instantiate(cards[card], Instantiate(panel, player1CardHolder).transform);
+        chatManager.SendToActionLog("Player draws a card");
         gameSystem.state = GameState.Enemyturn;
     }
 

@@ -2,10 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using MLAgents;
-using MLAgents.Sensors;
 using TMPro;
-using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
@@ -40,13 +37,8 @@ public class GameSystem : MonoBehaviour
     private bool alreadyAsked;
     private readonly Random _random = new Random();
 
-    public TMP_Text lostGames;
-    public TMP_Text wonGames;
-
-    public PlayerAgent playerAgent1;
     public PlayerAgent playerAgent2;
-
-    public float action = 0f;
+    
 
     
     public void ResetGame()
@@ -82,10 +74,8 @@ public class GameSystem : MonoBehaviour
     }
     private void Start()
     {
-        player1 = new Player(playerTokens, playerTokensCaptured, wonGames, "white", 1 );
-        player2 = new Player(enemyTokens, enemyTokensCaptured, lostGames, "red", 0 );
-        playerAgent1.Player = player1;
-        playerAgent1.Opponent = player2;
+        player1 = new Player(playerTokens, playerTokensCaptured, "white", 1 );
+        player2 = new Player(enemyTokens, enemyTokensCaptured, "red", 0 );
         playerAgent2.Player = player2;
         playerAgent2.Opponent = player1;
         deckHandler.player1 = player1;
@@ -122,7 +112,7 @@ public class GameSystem : MonoBehaviour
         player2.Blocking = false;
         alreadyAsked = false;
         
-        yield return new WaitForSeconds(0f);
+        yield return new WaitForSeconds(2f);
         
         //coin flip to decide starting player
         if (_random.Next(0, 2) == 1)
@@ -145,9 +135,6 @@ public class GameSystem : MonoBehaviour
         while (state == GameState.Playerturn)
         {
             chatManager.SendToActionLog("Waiting for player");
-            //request decision / player action
-            //yield return new WaitForSeconds(3f);
-            //playerAgent1.RequestDecision();
 
             yield return new WaitUntil(() => state != GameState.Playerturn);
         }
@@ -160,22 +147,6 @@ public class GameSystem : MonoBehaviour
         if (state == GameState.Enemyturn)
         {
             StartCoroutine(EnemyTurn());
-        }
-        else
-        {
-            if (state == GameState.Won)
-            {
-                playerAgent1.SetReward(10f);
-                playerAgent2.SetReward(-10f);
-            }
-            else
-            {
-                playerAgent1.SetReward(-10f);
-                playerAgent2.SetReward(10f);
-            }
-            yield return new WaitForSeconds(7f);
-            playerAgent1.EndEpisode();
-            //playerAgent2.EndEpisode();
         }
     }
     
@@ -198,28 +169,14 @@ public class GameSystem : MonoBehaviour
         yield return new WaitUntil(() => state != GameState.Enemyturn);
         
         //game over?
-        if (state != GameState.Playerturn)
+        if (state == GameState.Playerturn)
         {
-            if (state == GameState.Won)
-            {
-                //playerAgent1.SetReward(10f);
-                //playerAgent2.SetReward(-10f);
-            }
-            else
-            {
-                //playerAgent1.SetReward(-10f);
-                //playerAgent2.SetReward(10f);
-            }
+            //reset forcedToPlay here to avoid bug by player spamming the button right before his turn
+            player2.ForcedToPlay = false;
+            player1.Blocking = false;
+        
+            StartCoroutine(PlayerTurn());
         }
-
-        //yield return new WaitForSeconds(1f);
-        
-        //reset forcedToPlay here to avoid bug by player spamming the button right before his turn
-        player2.ForcedToPlay = false;
-        player1.Blocking = false;
-        
-        StartCoroutine(PlayerTurn());
-
     }
 
     public void EnemyRandomAction()
@@ -631,13 +588,11 @@ public class Player
     public int TokenType;
     public TMP_Text Tokens;
     public TMP_Text CapturedTokens;
-    public TMP_Text Wins;
 
-    public Player(TMP_Text tokens, TMP_Text capturedTokens, TMP_Text wins, string color, int tokenType)
+    public Player(TMP_Text tokens, TMP_Text capturedTokens, string color, int tokenType)
     {
         Tokens = tokens;
         CapturedTokens = capturedTokens;
-        Wins = wins;
         Color = color;
         TokenType = tokenType;
     }

@@ -101,16 +101,6 @@ public class PlayerAgent : Agent
         
     }
 
-    public override float[] Heuristic()
-    {
-        float blocking = 0f;
-        float forcing = 0f;
-        float action = gameSystem.action;
-
-        
-        return new float[]{action, blocking, forcing};
-    }
-
     public override void OnActionReceived(float[] vectorAction)
     {
         if (Player.Color == "white" && gameSystem.state != GameState.Playerturn)
@@ -151,6 +141,8 @@ public class PlayerAgent : Agent
         }
 
         int move = Mathf.FloorToInt(vectorAction[0]);
+        
+        //check if chosen action is legal
         if (move == 6 && Player.cardsInHand.Count < 4 && !Player.ForcedToPlay)
         {
             if (Player.Color == "white")
@@ -166,6 +158,8 @@ public class PlayerAgent : Agent
         {
             int newTokensCaptured = int.Parse(Player.CapturedTokens.text);
             int card = (int) vectorAction[0];
+            
+            //check if chosen action is legal
             if (!Player.cardsInHand.Contains(card) || card == gameSystem.deckHandler.lastPlayed)
             {
                 bool mustDraw = true;
@@ -232,28 +226,6 @@ public class PlayerAgent : Agent
                 }
             }
         }
-    }
-
-    public override void OnEpisodeBegin()
-    {
-        // if (gameSystem.state == GameState.Enemyturn || gameSystem.state == GameState.Playerturn)
-        // {
-        //     return;
-        // }
-
-        if (gameSystem.state!=GameState.Start && Player.Color == "red")
-        {
-            if(gameSystem.state == GameState.Won)
-            {
-                Player.Wins.text = (int.Parse(Player.Wins.text) + 1).ToString();
-            }
-            else
-            {
-                Opponent.Wins.text = (int.Parse(Opponent.Wins.text) + 1).ToString();
-            }
-            gameSystem.ResetGame();
-        }
-        penalty = Academy.Instance.FloatProperties.GetPropertyWithDefault("penalty", 3f);
     }
 
 }
