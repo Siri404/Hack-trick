@@ -119,6 +119,7 @@ public class DeckHandler : MonoBehaviour
         deck[card]--;
         cardsInDeck--;
         player2.cardsInHand.Add(card);
+        PlayDrawCardSound();
         Instantiate(cards[6], Instantiate(panel, player2CardHolder).transform);
         chatManager.SendToActionLog("Enemy draws a card");
         gameSystem.state = GameState.Playerturn;
@@ -158,6 +159,7 @@ public class DeckHandler : MonoBehaviour
         cardsInDeck--;
         player1.cardsInHand.Add(card);
         //ui draw
+        PlayDrawCardSound();
         Instantiate(cards[card], Instantiate(panel, player1CardHolder).transform);
         chatManager.SendToActionLog("Player draws a card");
         gameSystem.state = GameState.Enemyturn;
@@ -242,5 +244,11 @@ public class DeckHandler : MonoBehaviour
     public void InstantiatePlayedCard(int card)
     {
         Instantiate(cards[card], Instantiate(panel, playedCardsHolder).transform);
+    }
+
+    public void PlayDrawCardSound()
+    {
+        int i = generator.Next(1, 4);
+        FindObjectOfType<AudioManager>().Play("Draw" + i);
     }
 }

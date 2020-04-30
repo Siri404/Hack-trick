@@ -19,6 +19,7 @@ public class GameSystem : MonoBehaviour
     private readonly List<int> _slotConverter = new List<int>(9);
     public GameState state;
     public List<GameObject> tokens;
+    private AudioManager audioManager;
 
     public Player player1;
     public Player player2;
@@ -74,6 +75,7 @@ public class GameSystem : MonoBehaviour
     }
     private void Start()
     {
+        audioManager = AudioManager.instance;
         player1 = new Player(playerTokens, playerTokensCaptured, "white", 1 );
         player2 = new Player(enemyTokens, enemyTokensCaptured, "red", 0 );
         playerAgent2.Player = player2;
@@ -262,7 +264,8 @@ public class GameSystem : MonoBehaviour
             Debug.Log("invalid pos");
             return;
         }
-        
+
+        PlayPlaceTokenSound();
         //slot is friendly or unoccupied
         if (Slots[pos].Color == color || Slots[pos].Color == "none")
         {
@@ -431,6 +434,7 @@ public class GameSystem : MonoBehaviour
 
     public void AskSum()
     {
+        audioManager.Play("menu_button");
         if(state != GameState.Playerturn) return;
         if (int.Parse(player1.CapturedTokens.text) > 0)
         {
@@ -449,6 +453,7 @@ public class GameSystem : MonoBehaviour
 
     public void ForceEnemyToPlay()
     {
+        audioManager.Play("menu_button");
         if (state != GameState.Playerturn) return;
         if (player2.Blocking)
         {
@@ -491,6 +496,7 @@ public class GameSystem : MonoBehaviour
 
     public void BlockForPlayer()
     {
+        audioManager.Play("menu_button");
         if(state != GameState.Playerturn) return;
         if (player1.Blocking)
         {
@@ -546,6 +552,12 @@ public class GameSystem : MonoBehaviour
         {
             Console.Write("Failed destroy!");
         }
+    }
+
+    public void PlayPlaceTokenSound()
+    {
+        int i = _random.Next(1, 6);
+        audioManager.Play("place_token" + i);
     }
 }
 
