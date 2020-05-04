@@ -1,11 +1,22 @@
 ﻿using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Serialization;
 
 public class MainMenu : MonoBehaviour
 {
-    public void PlayGame(){
+    public GameObject mainMenuCanvas;
+    public GameObject onlineMenuCanvas;
+    public void StartSingleplayerGame(){
         AudioManager.instance.Play("menu_button");
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
+    }
+
+    public void OnlineButtonHandler()
+    {
+        AudioManager.instance.Play("menu_button");
+        mainMenuCanvas.SetActive(false);
+        onlineMenuCanvas.SetActive(true);
+        
     }
 
     public void QuitGame()

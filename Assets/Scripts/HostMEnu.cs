@@ -1,0 +1,17 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class HostMenu : MonoBehaviour
+{
+    public GameObject onlineMenuCanvas;
+    public GameObject hostMenuCanvas;
+    
+    
+    public void BackButtonHandler()
+    {
+        AudioManager.instance.Play("menu_button");
+        hostMenuCanvas.SetActive(false);
+        onlineMenuCanvas.SetActive(true);
+    }
+}
