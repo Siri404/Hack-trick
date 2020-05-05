@@ -6,14 +6,14 @@ using UnityEngine;
 public class GameOver : MonoBehaviour
 {
     public TMP_Text text;
-    public GameSystem gameSystem;
+    
     public void GameOverDialogue()
     {
-        if (gameSystem.state == GameState.Won)
+        if (GameSystem.instance.state == GameState.Won)
         {
             text.text = "You Won!";
         }
-        else if (gameSystem.state == GameState.Lost)
+        else if (GameSystem.instance.state == GameState.Lost)
         {
             text.text = "You Lost!";
         }
