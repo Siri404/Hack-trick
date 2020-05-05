@@ -52,13 +52,16 @@ public class GameSystem : MonoBehaviour
 
     public void ResetGame()
     {
-        if (client.isHost)
+        if (isMultiplayer)
         {
-            client.Send("restart");
-        }
-        else
-        {
-            waitingForServer = true;
+            if (client.isHost)
+            {
+                client.Send("restart");
+            }
+            else
+            {
+                waitingForServer = true;
+            }
         }
         //destroy cards for player and enemy
         Transform[] children = PlayerCardHolder.GetComponentsInChildren<Transform>();
@@ -263,6 +266,10 @@ public class GameSystem : MonoBehaviour
             playerAgent2.RequestDecision();
             //EnemyRandomAction();
             yield return new WaitUntil(() => state != GameState.Enemyturn);
+            
+            //reset forcedToPlay after enemy turn is over
+            player2.ForcedToPlay = false;
+            player1.Blocking = false;
             StartCoroutine(PlayerTurn());
             
         }
