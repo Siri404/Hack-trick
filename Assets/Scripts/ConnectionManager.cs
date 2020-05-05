@@ -32,17 +32,20 @@ public class ConnectionManager : MonoBehaviour
             hostAddress = "127.0.0.1";
         }
 
-        if (hostAddress.Equals("bobo", StringComparison.InvariantCultureIgnoreCase))
+        if (hostAddress.Equals("bobo", StringComparison.InvariantCultureIgnoreCase) ||
+            hostAddress.Equals("siri", StringComparison.InvariantCultureIgnoreCase))
         {
             hostAddress = "188.24.118.216";
         }
-        
-        if (hostAddress.Equals("vali", StringComparison.InvariantCultureIgnoreCase))
+
+        if (hostAddress.Equals("vali", StringComparison.InvariantCultureIgnoreCase) ||
+            hostAddress.Equals("ursu", StringComparison.InvariantCultureIgnoreCase))
         {
             hostAddress = "109.101.213.156";
         }
         
-        if (hostAddress.Equals("iulian", StringComparison.InvariantCultureIgnoreCase))
+        if (hostAddress.Equals("iulian", StringComparison.InvariantCultureIgnoreCase) ||
+            hostAddress.Equals("julien", StringComparison.InvariantCultureIgnoreCase))
         {
             hostAddress = "109.96.38.202";
         }
