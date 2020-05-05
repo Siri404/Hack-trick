@@ -10,6 +10,7 @@
           <e p="AudioManager.cs" t="Include" />
           <e p="ChatManager.cs" t="Include" />
           <e p="Client.cs" t="Include" />
+          <e p="ConnectionManager.cs" t="Include" />
           <e p="ConnectMenu.cs" t="Include" />
           <e p="DeckHandler.cs" t="Include" />
           <e p="GameOver.cs" t="Include" />

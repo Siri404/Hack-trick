@@ -7,6 +7,8 @@ using UnityEngine.Serialization;
 
 public class ChatManager : MonoBehaviour
 {
+    public static ChatManager instance { get; set; }
+    
     [FormerlySerializedAs("chatPannel")] [SerializeField]
     private GameObject chatPanel;
 
@@ -15,7 +17,19 @@ public class ChatManager : MonoBehaviour
 
     private List<Message> messages = new List<Message>(26);
     private int messageLimit = 25;
-    
+
+    public void Start()
+    {
+        if (instance != null)
+        {
+            Destroy(gameObject);
+        }
+        else
+        {
+            instance = this;
+        }
+    }
+
     public void SendToActionLog(string text)
     {
         if (messages.Count >= messageLimit)

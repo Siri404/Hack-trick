@@ -7,6 +7,8 @@ using Random = System.Random;
 
 public class DeckHandler : MonoBehaviour
 {
+    public static DeckHandler instance { get; set; }
+    
     private List<int> deck = new List<int>(6);
     public Player player1;
     public Player player2;
@@ -24,26 +26,51 @@ public class DeckHandler : MonoBehaviour
     public Transform player2CardHolder;
     public Transform playedCardsHolder;
     public GameObject panel;
-    public GameSystem gameSystem;
-    public ChatManager chatManager;
+    
 
     //deck starts with 3 copies of each card
     private void Start()
     {
+        if (instance != null)
+        {
+            Destroy(gameObject);
+        }
+        else
+        {
+            instance = this;
+        }
+        
         for (int i = 0; i < 6; i++)
         {
             deck.Add(3);
         }
 
-        player1 = gameSystem.player1;
-        player2 = gameSystem.player2;
+        player1 = GameSystem.instance.player1;
+        player2 = GameSystem.instance.player2;
     }
 
+    public void SetDeck(List<int> deck)
+    {
+        this.deck = deck;
+        int sum = 0;
+        foreach (int i in deck)
+        {
+            sum += i;
+        }
+
+        cardsInDeck = sum;
+    }
+
+    public List<int> GetDeck()
+    {
+        return deck;
+    }
+    
     public void ResetDeck()
     {
         playedCards.Clear();
-        player1.cardsInHand.Clear();
-        player2.cardsInHand.Clear();
+        player1.CardsInHand.Clear();
+        player2.CardsInHand.Clear();
         deck.Clear();
         for (int i = 0; i < 6; i++)
         {
@@ -58,7 +85,7 @@ public class DeckHandler : MonoBehaviour
     //shuffle the deck, cards in hand and last played are not returned to the shuffled deck
     private void shuffle_deck()
     {
-        chatManager.SendToActionLog("Shuffling deck!");
+        ChatManager.instance.SendToActionLog("Shuffling deck!");
         playedCards.Clear();
         foreach (Transform child in playedCardsHolder) {
             Destroy(child.gameObject);
@@ -71,16 +98,16 @@ public class DeckHandler : MonoBehaviour
         cardsInDeck = 18;
 
         //remove cards that player 1 holds
-        for (int i = 0; i < player1.cardsInHand.Count; i++)
+        for (int i = 0; i < player1.CardsInHand.Count; i++)
         {
-            deck[player1.cardsInHand[i]]--;
+            deck[player1.CardsInHand[i]]--;
             cardsInDeck--;
         }
 
         //remove cards that player 2 holds
-        for (int i = 0; i < player2.cardsInHand.Count; i++)
+        for (int i = 0; i < player2.CardsInHand.Count; i++)
         {
-            deck[player2.cardsInHand[i]]--;
+            deck[player2.CardsInHand[i]]--;
             cardsInDeck--;
         }
 
@@ -93,12 +120,29 @@ public class DeckHandler : MonoBehaviour
         }
     }
 
+    //draw a specific card for player2
+    public void DrawForPlayer2(int card)
+    {
+        if (cardsInDeck == 0)
+        {
+            shuffle_deck();
+        }
+        
+        deck[card]--;
+        cardsInDeck--;
+        player2.CardsInHand.Add(card);
+        PlayDrawCardSound();
+        Instantiate(cards[6], Instantiate(panel, player2CardHolder).transform);
+        ChatManager.instance.SendToActionLog("Enemy draws a card");
+        GameSystem.instance.state = GameState.Playerturn;
+    }
+    
     //draw for player 2 (no human error check)
     public void DrawForPlayer2()
     {
-        if(gameSystem.state != GameState.Enemyturn) return;
+        if(GameSystem.instance.state != GameState.Enemyturn) return;
         
-        if (player2.cardsInHand.Count == 4)
+        if (player2.CardsInHand.Count == 4)
         {
             //can't have more than 4 cards in hand
             return;
@@ -118,26 +162,26 @@ public class DeckHandler : MonoBehaviour
 
         deck[card]--;
         cardsInDeck--;
-        player2.cardsInHand.Add(card);
+        player2.CardsInHand.Add(card);
         PlayDrawCardSound();
         Instantiate(cards[6], Instantiate(panel, player2CardHolder).transform);
-        chatManager.SendToActionLog("Enemy draws a card");
-        gameSystem.state = GameState.Playerturn;
+        ChatManager.instance.SendToActionLog("Enemy draws a card");
+        GameSystem.instance.state = GameState.Playerturn;
     }
 
     //draw a card for the player 1 (human player)
     public void DrawForPlayer1()
     {
-        if (gameSystem.state != GameState.Playerturn) return;
-        if (player1.ForcedToPlay && !(player1.cardsInHand.Count == 1 && player1.cardsInHand[0] == lastPlayed ||
-                                               player1.cardsInHand.Count == 2 && player1.cardsInHand[0] == lastPlayed &&
-                                               player1.cardsInHand[1] == lastPlayed))
+        if (GameSystem.instance.state != GameState.Playerturn) return;
+        if (player1.ForcedToPlay && !(player1.CardsInHand.Count == 1 && player1.CardsInHand[0] == lastPlayed ||
+                                               player1.CardsInHand.Count == 2 && player1.CardsInHand[0] == lastPlayed &&
+                                               player1.CardsInHand[1] == lastPlayed))
         {
-            chatManager.SendToActionLog("You are forced to play a card this turn!");
+            ChatManager.instance.SendToActionLog("You are forced to play a card this turn!");
             return;
         }
 
-        if (player1.cardsInHand.Count == 4)
+        if (player1.CardsInHand.Count == 4)
         {
             //can't have more than 4 cards in hand
             return;
@@ -157,22 +201,24 @@ public class DeckHandler : MonoBehaviour
         
         deck[card]--;
         cardsInDeck--;
-        player1.cardsInHand.Add(card);
+        player1.CardsInHand.Add(card);
         //ui draw
         PlayDrawCardSound();
         Instantiate(cards[card], Instantiate(panel, player1CardHolder).transform);
-        chatManager.SendToActionLog("Player draws a card");
-        gameSystem.state = GameState.Enemyturn;
+        GameSystem.instance.playerActionVector[0] = 1;
+        GameSystem.instance.playerActionVector[4] = card;
+        ChatManager.instance.SendToActionLog("Player draws a card");
+        GameSystem.instance.state = GameState.Enemyturn;
     }
 
     public void RemoveFromPlayer1(int card)
     {
-        player1.cardsInHand.Remove(card);
+        player1.CardsInHand.Remove(card);
     }
 
     public void RemoveFromPlayer2(int card)
     {
-        player2.cardsInHand.Remove(card);
+        player2.CardsInHand.Remove(card);
     }
 
     //setup for start of game
@@ -180,7 +226,7 @@ public class DeckHandler : MonoBehaviour
     {
         //the starting player has 3 cards, the other has 4
         int player1CardCount, player2CardCount;
-        if (gameSystem.state == GameState.Playerturn)
+        if (GameSystem.instance.state == GameState.Playerturn)
         {
             player1CardCount = 3;
             player2CardCount = 4;
@@ -203,7 +249,7 @@ public class DeckHandler : MonoBehaviour
 
             deck[card]--;
             cardsInDeck--;
-            player2.cardsInHand.Add(card);
+            player2.CardsInHand.Add(card);
             Instantiate(cards[6], Instantiate(panel, player2CardHolder).transform);
         }
 
@@ -218,7 +264,7 @@ public class DeckHandler : MonoBehaviour
 
             deck[card]--;
             cardsInDeck--;
-            player1.cardsInHand.Add(card);
+            player1.CardsInHand.Add(card);
             //ui draw
             Instantiate(cards[card], Instantiate(panel, player1CardHolder).transform);
         }
@@ -236,14 +282,22 @@ public class DeckHandler : MonoBehaviour
         deck[card]--;
         cardsInDeck--;
         lastCardImage.sprite = cards[card].GetComponent<Image>().sprite;
-        
-        chatManager.SendToActionLog("Enemy card total is: " + player2.cardsInHand.Sum());
-
+        ChatManager.instance.SendToActionLog("Enemy card total is: " + player2.CardsInHand.Sum());
     }
     
     public void InstantiatePlayedCard(int card)
     {
         Instantiate(cards[card], Instantiate(panel, playedCardsHolder).transform);
+    }
+
+    public void InstantiateCardForPlayer(int card)
+    {
+        Instantiate(cards[card], Instantiate(panel, player1CardHolder).transform);
+    }
+
+    public void InstantiateCardForEnemy()
+    {
+        Instantiate(cards[6], Instantiate(panel, player2CardHolder).transform);
     }
 
     public void PlayDrawCardSound()

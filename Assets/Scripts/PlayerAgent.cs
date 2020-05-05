@@ -6,7 +6,6 @@ using UnityEngine.UI;
 
 public class PlayerAgent : Agent
 {
-    public GameSystem gameSystem;
     private float penalty = 1f;
     public Player Player { get; set; }
     public Player Opponent { get; set; }
@@ -16,18 +15,18 @@ public class PlayerAgent : Agent
         List<int> illegalActions = new List<int>();
         for (int i = 0; i < 6; i++)
         {
-            if (!Player.cardsInHand.Contains(i))
+            if (!Player.CardsInHand.Contains(i))
             {
                 illegalActions.Add(i);
             }
         }
 
-        if (!illegalActions.Contains(gameSystem.deckHandler.lastPlayed))
+        if (!illegalActions.Contains(DeckHandler.instance.lastPlayed))
         {
-            illegalActions.Add(gameSystem.deckHandler.lastPlayed);
+            illegalActions.Add(DeckHandler.instance.lastPlayed);
         }
 
-        if (Player.cardsInHand.Count == 4)
+        if (Player.CardsInHand.Count == 4)
         {
             illegalActions.Add(6);
         }
@@ -36,9 +35,9 @@ public class PlayerAgent : Agent
         {
             bool canPlay;
 
-            if (Player.cardsInHand.Count == 1 && Player.cardsInHand[0] == gameSystem.deckHandler.lastPlayed || 
-                Player.cardsInHand.Count == 2 && Player.cardsInHand[0] == gameSystem.deckHandler.lastPlayed 
-                                              && Player.cardsInHand[1] == gameSystem.deckHandler.lastPlayed)
+            if (Player.CardsInHand.Count == 1 && Player.CardsInHand[0] == DeckHandler.instance.lastPlayed || 
+                Player.CardsInHand.Count == 2 && Player.CardsInHand[0] == DeckHandler.instance.lastPlayed 
+                                              && Player.CardsInHand[1] == DeckHandler.instance.lastPlayed)
             {
                 canPlay = false;
             }
@@ -54,13 +53,13 @@ public class PlayerAgent : Agent
         }
 
         actionMasker.SetMask(0, illegalActions);
-        if (int.Parse(gameSystem.playerTokens.text) < 2)
+        if (int.Parse(GameSystem.instance.playerTokens.text) < 2)
         {
             actionMasker.SetMask(1, new []{1});
             actionMasker.SetMask(2, new []{1});
         }
 
-        if (Opponent.cardsInHand.Count == 0 || Opponent.cardsInHand.Count == 4 || Opponent.Blocking)
+        if (Opponent.CardsInHand.Count == 0 || Opponent.CardsInHand.Count == 4 || Opponent.Blocking)
         {
             actionMasker.SetMask(2, new []{1});
         }
@@ -71,17 +70,17 @@ public class PlayerAgent : Agent
         float[] board = new float[9];
         for (int i = 0; i < 9; i++)
         {
-            if (gameSystem.Slots[i].Color.Equals("none"))
+            if (GameSystem.instance.Slots[i].Color.Equals("none"))
             {
                 board[i] = 0f;
             }
-            else if(gameSystem.Slots[i].Color.Equals(Opponent.Color))
+            else if(GameSystem.instance.Slots[i].Color.Equals(Opponent.Color))
             {
-                board[i] = gameSystem.Slots.Count;
+                board[i] = GameSystem.instance.Slots.Count;
             }
             else
             {
-                board[i] = -1 * gameSystem.Slots.Count;
+                board[i] = -1 * GameSystem.instance.Slots.Count;
             }
         }
         //9 floats
@@ -93,9 +92,9 @@ public class PlayerAgent : Agent
         //1 float
         sensor.AddObservation(float.Parse(Opponent.Tokens.text));
         //1 float
-        sensor.AddObservation(Player.cardsInHand.Count);
+        sensor.AddObservation(Player.CardsInHand.Count);
         //1 float
-        sensor.AddObservation(Opponent.cardsInHand.Count);
+        sensor.AddObservation(Opponent.CardsInHand.Count);
         
         //9+1+1+1+1+1 = 14 values
         
@@ -103,12 +102,12 @@ public class PlayerAgent : Agent
 
     public override void OnActionReceived(float[] vectorAction)
     {
-        if (Player.Color == "white" && gameSystem.state != GameState.Playerturn)
+        if (Player.Color == "white" && GameSystem.instance.state != GameState.Playerturn)
         {
             return;
         }
 
-        if (Player.Color == "red" && gameSystem.state != GameState.Enemyturn)
+        if (Player.Color == "red" && GameSystem.instance.state != GameState.Enemyturn)
         {
             return;
         }
@@ -117,11 +116,11 @@ public class PlayerAgent : Agent
         {
             if (Player.Color == "white")
             {
-                gameSystem.BlockForPlayer();
+                GameSystem.instance.BlockForPlayer();
             }
             else
             {
-                gameSystem.BlockForEnemy();
+                GameSystem.instance.BlockForEnemy();
             }
             AddReward(penalty);
         }
@@ -131,11 +130,11 @@ public class PlayerAgent : Agent
         {
             if (Player.Color == "white")
             {
-                gameSystem.ForceEnemyToPlay();
+                GameSystem.instance.ForceEnemyToPlay();
             }
             else
             {
-                gameSystem.ForcePlayerToPlay();
+                GameSystem.instance.ForcePlayerToPlay();
             }
             AddReward(penalty);
         }
@@ -143,15 +142,15 @@ public class PlayerAgent : Agent
         int move = Mathf.FloorToInt(vectorAction[0]);
         
         //check if chosen action is legal
-        if (move == 6 && Player.cardsInHand.Count < 4 && !Player.ForcedToPlay)
+        if (move == 6 && Player.CardsInHand.Count < 4 && !Player.ForcedToPlay)
         {
             if (Player.Color == "white")
             {
-                gameSystem.deckHandler.DrawForPlayer1();
+                DeckHandler.instance.DrawForPlayer1();
             }
             else
             {
-                gameSystem.deckHandler.DrawForPlayer2();
+                DeckHandler.instance.DrawForPlayer2();
             }   
         }
         else
@@ -160,14 +159,14 @@ public class PlayerAgent : Agent
             int card = (int) vectorAction[0];
             
             //check if chosen action is legal
-            if (!Player.cardsInHand.Contains(card) || card == gameSystem.deckHandler.lastPlayed)
+            if (!Player.CardsInHand.Contains(card) || card == DeckHandler.instance.lastPlayed)
             {
                 bool mustDraw = true;
-                for (int i = 0; i < Player.cardsInHand.Count; i++)
+                for (int i = 0; i < Player.CardsInHand.Count; i++)
                 {
-                    if (Player.cardsInHand[i] != gameSystem.deckHandler.lastPlayed)
+                    if (Player.CardsInHand[i] != DeckHandler.instance.lastPlayed)
                     {
-                        card = Player.cardsInHand[i];
+                        card = Player.CardsInHand[i];
                         mustDraw = false;
                         break;
                     }
@@ -177,11 +176,11 @@ public class PlayerAgent : Agent
                 {
                     if (Player.Color == "white")
                     {
-                        gameSystem.deckHandler.DrawForPlayer1();
+                        DeckHandler.instance.DrawForPlayer1();
                     }
                     else
                     {
-                        gameSystem.deckHandler.DrawForPlayer2();
+                        DeckHandler.instance.DrawForPlayer2();
                     }
                     return;
                 }
@@ -190,39 +189,39 @@ public class PlayerAgent : Agent
             //remove & destroy played card
             if (Player.Color == "white")
             {
-                gameSystem.deckHandler.RemoveFromPlayer1(card);
-                gameSystem.DestroyCardFromPlayerHolder(card);
+                DeckHandler.instance.RemoveFromPlayer1(card);
+                GameSystem.instance.DestroyCardFromPlayerHolder(card);
             }
             else
             {
-                gameSystem.deckHandler.RemoveFromPlayer2(card);
-                gameSystem.DestroyCardFromEnemyHolder();
+                DeckHandler.instance.RemoveFromPlayer2(card);
+                GameSystem.instance.DestroyCardFromEnemyHolder();
             }
 
             //get the position on board for token placement
-            int pos = gameSystem.deckHandler.lastPlayed + card - 1;
+            int pos = DeckHandler.instance.lastPlayed + card - 1;
             
             //set last played card
-            gameSystem.deckHandler.lastPlayed = card;
-            gameSystem.deckHandler.playedCards.Add(card);
-            gameSystem.deckHandler.InstantiatePlayedCard(card);
-            gameSystem.lastCardImage.sprite = gameSystem.deckHandler.cards[card].GetComponent<Image>().sprite;
+            DeckHandler.instance.lastPlayed = card;
+            DeckHandler.instance.playedCards.Add(card);
+            DeckHandler.instance.InstantiatePlayedCard(card);
+            GameSystem.instance.lastCardImage.sprite = DeckHandler.instance.cards[card].GetComponent<Image>().sprite;
             
-            gameSystem.PlaceToken(pos, Player.Color, Player.TokenType);
+            GameSystem.instance.PlaceToken(pos, Player.Color, Player.TokenType);
             newTokensCaptured = int.Parse(Player.CapturedTokens.text) - newTokensCaptured;
             AddReward(newTokensCaptured);
             if (Player.Color == "white")
             {
-                if (gameSystem.state == GameState.Playerturn)
+                if (GameSystem.instance.state == GameState.Playerturn)
                 {
-                    gameSystem.state = GameState.Enemyturn;
+                    GameSystem.instance.state = GameState.Enemyturn;
                 }
             }
             else
             {
-                if (gameSystem.state == GameState.Enemyturn)
+                if (GameSystem.instance.state == GameState.Enemyturn)
                 {
-                    gameSystem.state = GameState.Playerturn;
+                    GameSystem.instance.state = GameState.Playerturn;
                 }
             }
         }

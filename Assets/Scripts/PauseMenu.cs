@@ -7,13 +7,12 @@ using UnityEngine.Serialization;
 public class PauseMenu : MonoBehaviour
 {
     public static bool GameIsPaused = false;
-    public GameSystem gameSystem;
     public GameObject pauseMenuPanel;
     public GameObject gameOverPanel;
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Escape) && gameSystem.state != GameState.Lost && gameSystem.state != GameState.Won)
+        if (Input.GetKeyDown(KeyCode.Escape) && !gameOverPanel.activeSelf)
         {
             if (GameIsPaused)
             {
@@ -45,11 +44,37 @@ public class PauseMenu : MonoBehaviour
         pauseMenuPanel.SetActive(false);
         gameOverPanel.SetActive(false);
         Time.timeScale = 1f;
-        gameSystem.ResetGame();
+        if (GameSystem.isMultiplayer && !GameSystem.instance.client.isHost)
+        {
+            ChatManager.instance.SendToActionLog("Only host can restart the game!");
+            return;
+        }
+
+        if (GameSystem.instance.state != GameState.Start)
+        {
+            GameSystem.instance.ResetGame();
+        }
     }
 
-    public void Quit()
+    public void QuitGame()
     {
         Application.Quit();
+    }
+
+    public void QuitToMainMenu()
+    {
+        Server server = FindObjectOfType<Server>();
+        if (server != null)
+        {
+            Destroy(server.gameObject);
+        }
+
+        Client client = FindObjectOfType<Client>();
+        if (client != null)
+        {
+            Destroy(client.gameObject);
+        }
+
+        SceneManager.LoadScene("Menu");
     }
 }

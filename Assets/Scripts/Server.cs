@@ -7,7 +7,7 @@ using UnityEngine;
 
 public class Server : MonoBehaviour
 {
-    public int port = 6321;
+    public static int port = 6321;
 
     private List<ServerClient> clients;
     private List<ServerClient> disconnectList;
@@ -25,6 +25,7 @@ public class Server : MonoBehaviour
         {
             server = new TcpListener(IPAddress.Any, port);
             server.Start();
+            serverStarted = true;
             
             StartListening();
         }
@@ -34,6 +35,11 @@ public class Server : MonoBehaviour
         }
     }
 
+    private void OnDestroy()
+    {
+        server.Stop();
+    }
+
     private void Update()
     {
         if (!serverStarted)
@@ -41,8 +47,9 @@ public class Server : MonoBehaviour
             return;
         }
 
-        foreach (ServerClient client in clients)
+        for (var index = 0; index < clients.Count; index++)
         {
+            ServerClient client = clients[index];
             //is client still connected?
             if (!IsConnected(client.tcp))
             {
@@ -68,6 +75,7 @@ public class Server : MonoBehaviour
         for (int i = 0; i < disconnectList.Count - 1; i++)
         {
             //Tell our player somebody has disconnected
+            BroadCast("disconnect|" + disconnectList[i].clientName + " has disconnected!", clients);
             
             clients.Remove(disconnectList[i]);
             disconnectList.RemoveAt(i);
@@ -82,10 +90,16 @@ public class Server : MonoBehaviour
     private void AcceptTcpClient(IAsyncResult ar)
     {
         TcpListener listener = (TcpListener) ar.AsyncState;
+        
+        string allUsers = "";
+        foreach (ServerClient client in clients)
+        {
+            allUsers += client.clientName + "|";
+        }
+        
         ServerClient serverClient = new ServerClient(listener.EndAcceptTcpClient(ar));
         clients.Add(serverClient);
-        
-        Debug.Log("Somebody has connected!");
+        BroadCast("SHello|" + allUsers, serverClient);
         
         StartListening();
     }
@@ -108,10 +122,17 @@ public class Server : MonoBehaviour
         }
     }
 
-    //server send
-    private void BroadCast(string data, List<ServerClient> clients)
+    //server send one
+    private void BroadCast(string data, ServerClient client)
     {
-        foreach (ServerClient client in clients)
+        List<ServerClient> list = new List<ServerClient> { client };
+        BroadCast(data, list);
+    }
+    
+    //server send all
+    private void BroadCast(string data, List<ServerClient> serverClients)
+    {
+        foreach (ServerClient client in serverClients)
         {
             try
             {
@@ -129,7 +150,37 @@ public class Server : MonoBehaviour
     //server send
     private void OnIncomingData(ServerClient client, string data)
     {
-        Debug.Log(client.clientName + ": " + data);
+        Debug.Log("Server: " + data);
+        string[] splitData = data.Split('|');
+
+        switch (splitData[0])
+        {
+            case "CHello":
+                //received client name and status
+                client.clientName = splitData[1];
+                if (splitData[2] == "1")
+                {
+                    client.isHost = true;
+                }
+                BroadCast("SInfo|" + client.clientName, clients);
+                break;
+            case "setup":
+                //send setup to guest
+                BroadCast(data, clients[1]);
+                break;
+            case "gMove":
+                //send to host the move made by guest
+                BroadCast("move|" + splitData[1], clients[0]);
+                break;
+            case "hMove":
+                //send to guest the move made by host
+                BroadCast("move|" + splitData[1], clients[1]);
+                break;
+            case "restart":
+                //tell guest to restart game
+                BroadCast("restart", clients[1]);
+                break;
+        }
     }
 }
 
@@ -137,6 +188,7 @@ public class ServerClient
 {
     public string clientName;
     public TcpClient tcp;
+    public bool isHost = false;
 
     public ServerClient(TcpClient tcp)
     {

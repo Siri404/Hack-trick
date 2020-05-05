@@ -19,6 +19,8 @@ public class OnlineMenu : MonoBehaviour
         AudioManager.instance.Play("menu_button");
         onlineMenuCanvas.SetActive(false);
         hostMenuCanvas.SetActive(true);
+        
+        ConnectionManager.instance.HostButton();
     }
     
     public void BackButtonHandler()

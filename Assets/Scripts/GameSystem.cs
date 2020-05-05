@@ -12,6 +12,8 @@ using Random = System.Random;
 public enum GameState { Start, Playerturn, Enemyturn, Won, Lost}
 public class GameSystem : MonoBehaviour
 {
+    public static GameSystem instance { set; get; }
+    
     [FormerlySerializedAs("slots")] public List<Transform> slotTransforms;
     public List<Slot> Slots { get; } = new List<Slot>(9);
 
@@ -19,7 +21,10 @@ public class GameSystem : MonoBehaviour
     private readonly List<int> _slotConverter = new List<int>(9);
     public GameState state;
     public List<GameObject> tokens;
-    private AudioManager audioManager;
+    //private AudioManager audioManager = AudioManager.instance;
+    //private DeckHandler deckHandler = DeckHandler.instance;
+    //private ChatManager chatManager = ChatManager.instance;
+
 
     public Player player1;
     public Player player2;
@@ -27,9 +32,7 @@ public class GameSystem : MonoBehaviour
     public TMP_Text playerTokensCaptured;
     public TMP_Text enemyTokens;
     public TMP_Text enemyTokensCaptured;
-    public DeckHandler deckHandler;
     public Image lastCardImage;
-    public ChatManager chatManager;
     public GameOver gameOver;
     public GameObject EnemyCardHolder;
     public GameObject PlayerCardHolder;
@@ -39,11 +42,24 @@ public class GameSystem : MonoBehaviour
     private readonly Random _random = new Random();
 
     public PlayerAgent playerAgent2;
-    
 
-    
+    public Client client;
+    private Server server;
+    public static bool isMultiplayer = true;
+    public bool waitingForServer = true;
+    public List<int> playerActionVector = new List<int> {0, 0, 0, 0, 0};
+
+
     public void ResetGame()
     {
+        if (client.isHost)
+        {
+            client.Send("restart");
+        }
+        else
+        {
+            waitingForServer = true;
+        }
         //destroy cards for player and enemy
         Transform[] children = PlayerCardHolder.GetComponentsInChildren<Transform>();
         for (int i = 1; i < children.Length; i++)
@@ -69,19 +85,42 @@ public class GameSystem : MonoBehaviour
             Slots[i].ResetSlot();
         }
         
-        chatManager.SendToActionLog("Game reset!");
+        ChatManager.instance.SendToActionLog("Game reset!");
         state = GameState.Start;
         StartCoroutine(SetupGame());
     }
     private void Start()
     {
-        audioManager = AudioManager.instance;
-        player1 = new Player(playerTokens, playerTokensCaptured, "white", 1 );
-        player2 = new Player(enemyTokens, enemyTokensCaptured, "red", 0 );
+        if (instance != null)
+        {
+            Destroy(gameObject);
+        }
+        else
+        {
+            instance = this;
+        }
+
+        server = FindObjectOfType<Server>();
+        client = FindObjectOfType<Client>();
+
+        if (client == null)
+        {
+            isMultiplayer = false;
+        }
+
+        if (isMultiplayer && !client.isHost)
+        {
+            player2 = new Player(playerTokens, playerTokensCaptured, "white", 1 );
+            player1 = new Player(enemyTokens, enemyTokensCaptured, "red", 0 );
+        }
+        else
+        {
+            player1 = new Player(playerTokens, playerTokensCaptured, "white", 1 );
+            player2 = new Player(enemyTokens, enemyTokensCaptured, "red", 0 );
+            
+        }
         playerAgent2.Player = player2;
         playerAgent2.Opponent = player1;
-        deckHandler.player1 = player1;
-        deckHandler.player2 = player2;
         //initialize the 9 slots of the board and the slot converter
         for (int i = 0; i < 9; i++)
         {
@@ -114,71 +153,120 @@ public class GameSystem : MonoBehaviour
         player2.Blocking = false;
         alreadyAsked = false;
         
-        yield return new WaitForSeconds(2f);
         
-        //coin flip to decide starting player
-        if (_random.Next(0, 2) == 1)
+        yield return new WaitForSeconds(2f);
+        if (isMultiplayer)
         {
-            state = GameState.Playerturn;
-            deckHandler.ResetDeck();
-            StartCoroutine(PlayerTurn());
+            //multi player setup
+            if (client.isHost)
+            {
+                //coin flip to decide starting player
+                if (_random.Next(0, 2) == 1)
+                {
+                    state = GameState.Playerturn;
+                    DeckHandler.instance.ResetDeck();
+                    SendGameSetup();
+                    StartCoroutine(PlayerTurn());
+                }
+                else
+                {
+                    state = GameState.Enemyturn;
+                    DeckHandler.instance.ResetDeck();
+                    SendGameSetup();
+                    StartCoroutine(EnemyTurn());
+                }
+            }
+            else
+            {
+                //wait for server to tell client to call ReceiveGameSetup
+                yield return new WaitUntil(() => !waitingForServer);
+                
+                ChatManager.instance.SendToActionLog("Enemy card total is: " + player2.CardsInHand.Sum());
+                if (player2.CardsInHand.Count == 4)
+                {
+                    state = GameState.Playerturn;
+                    StartCoroutine(PlayerTurn());
+                }
+                else
+                {
+                    state = GameState.Enemyturn;
+                    StartCoroutine(EnemyTurn());
+                }
+            }
         }
+        //single player setup
         else
         {
-            state = GameState.Enemyturn;
-            deckHandler.ResetDeck();
-            StartCoroutine(EnemyTurn());
+            //coin flip to decide starting player
+            if (_random.Next(0, 2) == 1)
+            {
+                state = GameState.Playerturn;
+                DeckHandler.instance.ResetDeck();
+                StartCoroutine(PlayerTurn());
+            }
+            else
+            {
+                state = GameState.Enemyturn;
+                DeckHandler.instance.ResetDeck();
+                StartCoroutine(EnemyTurn());
+            }
         }
+        
     }
 
     IEnumerator PlayerTurn()
     {
+        CheckGameOver();
         alreadyAsked = false;
+        playerActionVector[3] = 0;
         while (state == GameState.Playerturn)
         {
-            chatManager.SendToActionLog("Waiting for player");
+            ChatManager.instance.SendToActionLog("Waiting for player");
 
             yield return new WaitUntil(() => state != GameState.Playerturn);
         }
-
-        player1.ForcedToPlay = false;
-        player2.Blocking = false;
         
-        //game over?
-        //if state is start -> game was reset, must not start EnemyTurn again
+        if (isMultiplayer)
+        {
+            waitingForServer = true;
+        }
+        //game not over -> sendPlayerMove
         if (state == GameState.Enemyturn)
         {
-            StartCoroutine(EnemyTurn());
+            if (isMultiplayer)
+            {
+                SendPlayerMove();
+            }
+            CheckGameOver();
+            
+            //if still game not over -> enemy turn
+            if (state == GameState.Enemyturn)
+            {
+                StartCoroutine(EnemyTurn());
+            }
         }
+        
     }
     
     IEnumerator EnemyTurn()
     {
-        //reset forcedToPlay after player turn is over
-        player1.ForcedToPlay = false;
-        player2.Blocking = false;
-        
-        //game over?
-        if (state != GameState.Enemyturn) yield break;
-        
-        chatManager.SendToActionLog("Enemy turn");
-        yield return new WaitForSeconds(3f);
-        
-        //randomAction / request decision
-        playerAgent2.RequestDecision();
-        //EnemyRandomAction();
-        
-        yield return new WaitUntil(() => state != GameState.Enemyturn);
-        
-        //game over?
-        if (state == GameState.Playerturn)
+
+        ChatManager.instance.SendToActionLog("Enemy turn");
+        if (!isMultiplayer)
         {
-            //reset forcedToPlay here to avoid bug by player spamming the button right before his turn
-            player2.ForcedToPlay = false;
-            player1.Blocking = false;
-        
+            //reset forcedToPlay after player turn is over
+            player1.ForcedToPlay = false;
+            player2.Blocking = false;
+            
+            yield return new WaitForSeconds(3f);
+            //randomAction / request decision
+            playerAgent2.RequestDecision();
+            //EnemyRandomAction();
+            yield return new WaitUntil(() => state != GameState.Enemyturn);
             StartCoroutine(PlayerTurn());
+            
         }
+        //else, game waits for server to call ExecuteEnemyActionVector
     }
 
     public void EnemyRandomAction()
@@ -194,41 +282,41 @@ public class GameSystem : MonoBehaviour
             ForcePlayerToPlay();
         }
 
-        if (player2.cardsInHand.Count == 1 && player2.cardsInHand[0] == deckHandler.lastPlayed || 
-            player2.cardsInHand.Count == 2 && player2.cardsInHand[0] == deckHandler.lastPlayed 
-                                           && player2.cardsInHand[1] == deckHandler.lastPlayed)
+        if (player2.CardsInHand.Count == 1 && player2.CardsInHand[0] == DeckHandler.instance.lastPlayed || 
+            player2.CardsInHand.Count == 2 && player2.CardsInHand[0] == DeckHandler.instance.lastPlayed 
+                                           && player2.CardsInHand[1] == DeckHandler.instance.lastPlayed)
         {
             if (player2.ForcedToPlay)
             {
-                chatManager.SendToActionLog("Enemy draws a card because he can't play the card(s) in hand");
+                ChatManager.instance.SendToActionLog("Enemy draws a card because he can't play the card(s) in hand");
             }
             else
             {
-                chatManager.SendToActionLog("Enemy draws a card");
+                ChatManager.instance.SendToActionLog("Enemy draws a card");
             }
 
-            deckHandler.DrawForPlayer2();
+            DeckHandler.instance.DrawForPlayer2();
             
         }
         
         //coin flip for draw / play card
-        else if (player2.cardsInHand.Count < 4 && _random.Next(0,2) == 1 && player2.ForcedToPlay == false 
-                 || player2.cardsInHand.Count == 0)
+        else if (player2.CardsInHand.Count < 4 && _random.Next(0,2) == 1 && player2.ForcedToPlay == false 
+                 || player2.CardsInHand.Count == 0)
         {
-            chatManager.SendToActionLog("Enemy draws a card");
-            deckHandler.DrawForPlayer2();
+            ChatManager.instance.SendToActionLog("Enemy draws a card");
+            DeckHandler.instance.DrawForPlayer2();
         }
         else
         {
-            chatManager.SendToActionLog("Enemy plays a card");
+            ChatManager.instance.SendToActionLog("Enemy plays a card");
             //play random card from hand
-            int card = deckHandler.lastPlayed;
-            while (card == deckHandler.lastPlayed)
+            int card = DeckHandler.instance.lastPlayed;
+            while (card == DeckHandler.instance.lastPlayed)
             {
-                card = player2.cardsInHand[_random.Next(0, player2.cardsInHand.Count)];
+                card = player2.CardsInHand[_random.Next(0, player2.CardsInHand.Count)];
             }
 
-            deckHandler.RemoveFromPlayer2(card);
+            DeckHandler.instance.RemoveFromPlayer2(card);
             Transform[] transforms = EnemyCardHolder.GetComponentsInChildren<Transform>();
             if (transforms.Length > 1)
             {
@@ -239,13 +327,13 @@ public class GameSystem : MonoBehaviour
                 Console.Write("Failed destroy!");
             }
             // get the position on board for token placement
-            int pos = deckHandler.lastPlayed + card - 1;
+            int pos = DeckHandler.instance.lastPlayed + card - 1;
             
             // set last played card
-            deckHandler.lastPlayed = card;
-            deckHandler.playedCards.Add(card);
-            deckHandler.InstantiatePlayedCard(card);
-            lastCardImage.sprite = deckHandler.cards[card].GetComponent<Image>().sprite;
+            DeckHandler.instance.lastPlayed = card;
+            DeckHandler.instance.playedCards.Add(card);
+            DeckHandler.instance.InstantiatePlayedCard(card);
+            lastCardImage.sprite = DeckHandler.instance.cards[card].GetComponent<Image>().sprite;
             
             PlaceToken(pos, player2.Color, 0);
             if (state == GameState.Enemyturn)
@@ -283,27 +371,7 @@ public class GameSystem : MonoBehaviour
             {
                 enemyTokens.text = (int.Parse(enemyTokens.text) - 1).ToString();
             }
-
-            //check if the new token is the third on the same slot => game over
-            if (Slots[pos].Count == 3)
-            {
-                if (Slots[pos].Color == "white")
-                {
-                    chatManager.SendToActionLog("You Won!");
-                    state = GameState.Won;
-                    gameOver.GameOverDialogue();
-                }
-                else
-                {
-                    chatManager.SendToActionLog("You Lost!");
-                    state = GameState.Lost;
-                    gameOver.GameOverDialogue();
-                }
-
-                return;
-            }
             
-            CheckGameOver(); 
             return;
         }
         
@@ -332,7 +400,6 @@ public class GameSystem : MonoBehaviour
             enemyTokens.text = (int.Parse(enemyTokens.text) - 1).ToString();
             enemyTokensCaptured.text = (int.Parse(enemyTokensCaptured.text) + tokensTaken).ToString();
         }
-        CheckGameOver();
     }
 
     private void CheckGameOver()
@@ -341,38 +408,38 @@ public class GameSystem : MonoBehaviour
         //check for lines & columns
         for (int line = 0; line < 3; line++)
         {
-            if (Slots[_slotConverter[line * 3]].Color == "white" && 
-                Slots[_slotConverter[line * 3 + 1]].Color == "white" && 
-                Slots[_slotConverter[line * 3 + 2]].Color == "white")
+            if (Slots[_slotConverter[line * 3]].Color == player1.Color && 
+                Slots[_slotConverter[line * 3 + 1]].Color == player1.Color && 
+                Slots[_slotConverter[line * 3 + 2]].Color == player1.Color)
             {
-                chatManager.SendToActionLog("You Won!");
+                ChatManager.instance.SendToActionLog("You Won!");
                 state = GameState.Won;
                 gameOver.GameOverDialogue();
                 return;
             }
             
-            if (Slots[_slotConverter[line * 3]].Color == "red" && Slots[_slotConverter[line * 3 + 1]].Color == "red" 
-                                                                && Slots[_slotConverter[line * 3 + 2]].Color == "red")
+            if (Slots[_slotConverter[line * 3]].Color == player2.Color && Slots[_slotConverter[line * 3 + 1]].Color == player2.Color 
+                                                                       && Slots[_slotConverter[line * 3 + 2]].Color == player2.Color)
             {
-                chatManager.SendToActionLog("You Lost!");
+                ChatManager.instance.SendToActionLog("You Lost!");
                 state = GameState.Lost;
                 gameOver.GameOverDialogue();
                 return;
             }
             
-            if (Slots[_slotConverter[line]].Color == "white" && Slots[_slotConverter[line + 3]].Color == "white" 
-                                                              && Slots[_slotConverter[line + 6]].Color == "white")
+            if (Slots[_slotConverter[line]].Color == player1.Color && Slots[_slotConverter[line + 3]].Color == player1.Color 
+                                                                   && Slots[_slotConverter[line + 6]].Color == player1.Color)
             {
-                chatManager.SendToActionLog("You Won!");
+                ChatManager.instance.SendToActionLog("You Won!");
                 state = GameState.Won;
                 gameOver.GameOverDialogue();
                 return;
             }
             
-            if (Slots[_slotConverter[line]].Color == "red" && Slots[_slotConverter[line + 3]].Color == "red"
-                                                            && Slots[_slotConverter[line + 6]].Color == "red")
+            if (Slots[_slotConverter[line]].Color == player2.Color && Slots[_slotConverter[line + 3]].Color == player2.Color
+                                                                   && Slots[_slotConverter[line + 6]].Color == player2.Color)
             {
-                chatManager.SendToActionLog("You Lost!");
+                ChatManager.instance.SendToActionLog("You Lost!");
                 state = GameState.Lost;
                 gameOver.GameOverDialogue();
                 return;
@@ -380,139 +447,172 @@ public class GameSystem : MonoBehaviour
         }
         
         //check diagonals
-        if (Slots[_slotConverter[0]].Color == "white" && Slots[_slotConverter[4]].Color == "white" 
-                                                       && Slots[_slotConverter[8]].Color == "white")
+        if (Slots[_slotConverter[0]].Color == player1.Color && Slots[_slotConverter[4]].Color == player1.Color
+                                                            && Slots[_slotConverter[8]].Color == player1.Color)
         {
-            chatManager.SendToActionLog("You Won!");
+            ChatManager.instance.SendToActionLog("You Won!");
             state = GameState.Won;
             gameOver.GameOverDialogue();
             return;
 
         }
         
-        if (Slots[_slotConverter[0]].Color == "red" && Slots[_slotConverter[4]].Color == "red" 
-                                                     && Slots[_slotConverter[8]].Color == "red")
+        if (Slots[_slotConverter[0]].Color == player2.Color && Slots[_slotConverter[4]].Color == player2.Color
+                                                            && Slots[_slotConverter[8]].Color == player2.Color)
         {
-            chatManager.SendToActionLog("You Lost!");
+            ChatManager.instance.SendToActionLog("You Lost!");
             state = GameState.Lost;
             gameOver.GameOverDialogue();
             return;
         }
 
-        if (Slots[_slotConverter[2]].Color == "white" && Slots[_slotConverter[4]].Color == "white" 
-                                                       && Slots[_slotConverter[6]].Color == "white")
+        if (Slots[_slotConverter[2]].Color == player1.Color && Slots[_slotConverter[4]].Color == player1.Color 
+                                                            && Slots[_slotConverter[6]].Color == player1.Color)
         {
-            chatManager.SendToActionLog("You Won!");
+            ChatManager.instance.SendToActionLog("You Won!");
             state = GameState.Won;
             gameOver.GameOverDialogue();
             return;
         }
         
-        if (Slots[_slotConverter[2]].Color == "red" && Slots[_slotConverter[4]].Color == "red" 
-                                                     && Slots[_slotConverter[6]].Color == "red")
+        if (Slots[_slotConverter[2]].Color == player2.Color && Slots[_slotConverter[4]].Color == player2.Color
+                                                            && Slots[_slotConverter[6]].Color == player2.Color)
         {
-            chatManager.SendToActionLog("You Lost!");
+            ChatManager.instance.SendToActionLog("You Lost!");
             state = GameState.Lost;
             gameOver.GameOverDialogue();
             return;
         }
-        if (int.Parse(enemyTokens.text) == 0)
+        
+        //check tokens
+        if (int.Parse(player2.Tokens.text) == 0)
         {
-            chatManager.SendToActionLog("You Won!");
+            ChatManager.instance.SendToActionLog("You Won!");
             state = GameState.Won;
             gameOver.GameOverDialogue();
             return;
         }
             
-        if (int.Parse(playerTokens.text) == 0)
+        if (int.Parse(player1.Tokens.text) == 0)
         {
-            chatManager.SendToActionLog("You Lost!");
+            ChatManager.instance.SendToActionLog("You Lost!");
             state = GameState.Lost;
             gameOver.GameOverDialogue();
+        }
+        
+        //check for stacks of 3 tokens
+        for (int i = 0; i < 9; i++)
+        {
+            if (Slots[i].Count == 3)
+            {
+                if (Slots[i].Color == player1.Color)
+                {
+                    ChatManager.instance.SendToActionLog("You Won!");
+                    state = GameState.Won;
+                    gameOver.GameOverDialogue();
+                }
+                else
+                {
+                    ChatManager.instance.SendToActionLog("You Lost!");
+                    state = GameState.Lost;
+                    gameOver.GameOverDialogue();
+                }
+            }
         }
     }
 
     public void AskSum()
     {
-        audioManager.Play("menu_button");
+        AudioManager.instance.Play("menu_button");
         if(state != GameState.Playerturn) return;
         if (int.Parse(player1.CapturedTokens.text) > 0)
         {
-            chatManager.SendToActionLog("Enemy card total is: " + player2.cardsInHand.Sum());
+            ChatManager.instance.SendToActionLog("Enemy card total is: " + player2.CardsInHand.Sum());
             
             //use only one token per turn
             if (alreadyAsked) return;
             alreadyAsked = true;
+            playerActionVector[3] = 1;
             player1.CapturedTokens.text = (int.Parse(player1.CapturedTokens.text) - 1).ToString();
         }
         else
         {
-            chatManager.SendToActionLog("Action requires one enemy token!");
+            ChatManager.instance.SendToActionLog("Action requires one enemy token!");
         }
+    }
+
+    public void EnemyAskedSum()
+    {
+        player2.CapturedTokens.text = (int.Parse(player2.CapturedTokens.text) - 1).ToString();
+        ChatManager.instance.SendToActionLog("Enemy asked your card sum!");
     }
 
     public void ForceEnemyToPlay()
     {
-        audioManager.Play("menu_button");
+        AudioManager.instance.Play("menu_button");
         if (state != GameState.Playerturn) return;
         if (player2.Blocking)
         {
-            chatManager.SendToActionLog("Enemy is blocking!");
+            ChatManager.instance.SendToActionLog("Enemy is blocking!");
             return;
         }
         if (player2.ForcedToPlay)
         {
             player2.ForcedToPlay = false;
             player1.Tokens.text = (int.Parse(player1.Tokens.text) + 1).ToString();
-            chatManager.SendToActionLog("Enemy no longer forced to play next turn");
+            playerActionVector[2] = 0;
+            ChatManager.instance.SendToActionLog("Enemy no longer forced to play next turn");
             return;
         }
-        if (player2.cardsInHand.Count == 0)
+        if (player2.CardsInHand.Count == 0)
         {
-            chatManager.SendToActionLog("Enemy does not have any cards, can't be forced to play next turn!");
+            ChatManager.instance.SendToActionLog("Enemy does not have any cards, can't be forced to play next turn!");
             return;
         }
 
         if (int.Parse(player1.Tokens.text) < 2)
         {
-            chatManager.SendToActionLog("You can't sacrifice your last token!");
+            ChatManager.instance.SendToActionLog("You can't sacrifice your last token!");
             return;
         }
         
         player2.ForcedToPlay = true;
         player1.Tokens.text = (int.Parse(player1.Tokens.text) - 1).ToString();
-        chatManager.SendToActionLog("Enemy forced to play next turn");
+        playerActionVector[2] = 1;
+        ChatManager.instance.SendToActionLog("Enemy forced to play next turn");
     }
 
     public void ForcePlayerToPlay()
     {
-        if (state != GameState.Enemyturn || player1.Blocking || player1.cardsInHand.Count == 0 || 
+        if (state != GameState.Enemyturn || player1.Blocking || player1.CardsInHand.Count == 0 || 
             int.Parse(player2.Tokens.text) < 2) return;
 
         player1.ForcedToPlay = true;
         player2.Tokens.text = (int.Parse(player2.Tokens.text) - 1).ToString();
-        chatManager.SendToActionLog("Player forced to play next turn");
+        ChatManager.instance.SendToActionLog("Player forced to play next turn");
     }
 
     public void BlockForPlayer()
     {
-        audioManager.Play("menu_button");
+        AudioManager.instance.Play("menu_button");
         if(state != GameState.Playerturn) return;
         if (player1.Blocking)
         {
             player1.Blocking = false;
             player1.Tokens.text = (int.Parse(player1.Tokens.text) + 1).ToString();
-            chatManager.SendToActionLog("You are no longer blocking");
+            playerActionVector[1] = 0;
+            ChatManager.instance.SendToActionLog("You are no longer blocking");
         }
         else if (int.Parse(playerTokens.text) > 2)
         {
             player1.Blocking = true;
             player1.Tokens.text = (int.Parse(player1.Tokens.text) - 1).ToString();
-            chatManager.SendToActionLog("You are now blocking");
+            playerActionVector[1] = 1;
+            ChatManager.instance.SendToActionLog("You are now blocking");
         }
         else
         {
-            chatManager.SendToActionLog("You can't sacrifice your last token!");
+            ChatManager.instance.SendToActionLog("You can't sacrifice your last token!");
         }
     }
 
@@ -522,7 +622,7 @@ public class GameSystem : MonoBehaviour
         
         player2.Blocking = true;
         player2.Tokens.text = (int.Parse(player2.Tokens.text) - 1).ToString();
-        chatManager.SendToActionLog("Enemy blocking next turn!");
+        ChatManager.instance.SendToActionLog("Enemy blocking next turn!");
     }
 
     public void DestroyCardFromPlayerHolder(int card)
@@ -557,7 +657,149 @@ public class GameSystem : MonoBehaviour
     public void PlayPlaceTokenSound()
     {
         int i = _random.Next(1, 6);
-        audioManager.Play("place_token" + i);
+        AudioManager.instance.Play("place_token" + i);
+    }
+
+    public void ReceiveGameSetup(string data)
+    {
+        Debug.Log("receiving setup");
+        string[] splitData = data.Split('|');
+        
+        List<int> deck = new List<int>();
+        foreach (string card in splitData[1].Split(','))
+        {
+            deck.Add(Int32.Parse(card));
+        }
+        DeckHandler.instance.SetDeck(deck);
+        
+        List<int> player1Hand = new List<int>();
+        foreach (string card in splitData[3].Split(','))
+        {
+            player1Hand.Add(Int32.Parse(card));
+            DeckHandler.instance.InstantiateCardForPlayer(Int32.Parse(card));
+        }
+
+        player1.CardsInHand = player1Hand;
+        
+        List<int> player2Hand = new List<int>();
+        foreach (string card in splitData[2].Split(','))
+        {
+            player2Hand.Add(Int32.Parse(card));
+            DeckHandler.instance.InstantiateCardForEnemy();
+        }
+
+        player2.CardsInHand = player2Hand;
+        
+        DeckHandler.instance.lastPlayed = Int32.Parse(splitData[4]);
+        DeckHandler.instance.playedCards.Add(DeckHandler.instance.lastPlayed);
+        DeckHandler.instance.InstantiatePlayedCard(DeckHandler.instance.lastPlayed);
+        lastCardImage.sprite = DeckHandler.instance.cards[DeckHandler.instance.lastPlayed].GetComponent<Image>().sprite;
+        
+        waitingForServer = false;
+    }
+
+    public void SendGameSetup()
+    {
+        string deckString = "";
+        foreach (int i in DeckHandler.instance.GetDeck())
+        {
+            deckString += i + ",";
+        }
+        deckString = deckString.Remove(deckString.Length - 1);
+
+        string player1String = "";
+        foreach (int i in player1.CardsInHand)
+        {
+            player1String += i + ",";
+        }
+        player1String = player1String.Remove(player1String.Length - 1);
+        
+        string player2String = "";
+        foreach (int i in player2.CardsInHand)
+        {
+            player2String += i + ",";
+        }
+        player2String = player2String.Remove(player2String.Length - 1);
+        
+        string data = "setup|" + deckString + "|" + player1String + "|" + player2String + "|" + DeckHandler.instance.lastPlayed;
+        client.Send(data);
+    }
+
+    public void SendPlayerMove()
+    {
+        string data;
+        if (client.isHost)
+        {
+            data = "hMove|";
+
+        }
+        else
+        {
+            data = "gMove|";
+        }
+        foreach (int i in playerActionVector)
+        {
+            data += i + ",";
+        }
+        data = data.Remove(data.Length - 1);
+        
+        client.Send(data);
+    }
+
+    public void ExecuteEnemyActionVector(List<int> actionVector)
+    {
+        //reset forcedToPlay after player turn is over
+        player1.ForcedToPlay = false;
+        playerActionVector[2] = 0;
+        player2.Blocking = false;
+        
+        if (actionVector[1] == 1)
+        {
+            BlockForEnemy();
+        }
+
+        if (actionVector[2] == 1)
+        {
+            ForcePlayerToPlay();
+        }
+
+        if (actionVector[3] == 1)
+        {
+            EnemyAskedSum();
+        }
+        
+        if (actionVector[0] == 1)
+        {
+            DeckHandler.instance.DrawForPlayer2(actionVector[4]);
+        }
+        else
+        {
+            int card = actionVector[4];
+            
+            //remove & destroy played card
+            DeckHandler.instance.RemoveFromPlayer2(card);
+            DestroyCardFromEnemyHolder();
+
+            //get the position on board for token placement
+            int pos = DeckHandler.instance.lastPlayed + card - 1;
+            
+            //set last played card
+            DeckHandler.instance.lastPlayed = card;
+            DeckHandler.instance.playedCards.Add(card);
+            DeckHandler.instance.InstantiatePlayedCard(card);
+            lastCardImage.sprite = DeckHandler.instance.cards[card].GetComponent<Image>().sprite;
+            
+            PlaceToken(pos, player2.Color, player2.TokenType);
+        }
+        state = GameState.Playerturn;
+        waitingForServer = false;
+        
+        //reset forcedToPlay here to avoid bug by player spamming the button right before his turn
+        player2.ForcedToPlay = false;
+        player1.Blocking = false;
+        playerActionVector[1] = 0;
+        
+        StartCoroutine(PlayerTurn());
     }
 }
 
@@ -595,7 +837,7 @@ public class Player
 {
     public bool ForcedToPlay;
     public bool Blocking;
-    public List<int> cardsInHand = new List<int>(4);
+    public List<int> CardsInHand { set; get; } = new List<int>(4);
     public string Color;
     public int TokenType;
     public TMP_Text Tokens;
@@ -608,4 +850,5 @@ public class Player
         Color = color;
         TokenType = tokenType;
     }
+    
 }

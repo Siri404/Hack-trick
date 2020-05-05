@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class ConnectMenu : MonoBehaviour
 {
@@ -13,5 +11,10 @@ public class ConnectMenu : MonoBehaviour
         AudioManager.instance.Play("menu_button");
         connectMenuCanvas.SetActive(false);
         onlineMenuCanvas.SetActive(true);
+    }
+
+    public void ConnectButtonHandler()
+    {
+        ConnectionManager.instance.ConnectToServerButton();
     }
 }
