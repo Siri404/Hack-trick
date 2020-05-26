@@ -2,7 +2,6 @@
 using MLAgents;
 using MLAgents.Sensors;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class PlayerAgent : Agent
 {
@@ -53,7 +52,7 @@ public class PlayerAgent : Agent
         }
 
         actionMasker.SetMask(0, illegalActions);
-        if (int.Parse(GameSystem.instance.playerTokens.text) < 2)
+        if (int.Parse(Player.Tokens.text) < 2)
         {
             actionMasker.SetMask(1, new []{1});
             actionMasker.SetMask(2, new []{1});
@@ -70,17 +69,17 @@ public class PlayerAgent : Agent
         float[] board = new float[9];
         for (int i = 0; i < 9; i++)
         {
-            if (GameSystem.instance.Slots[i].Color.Equals("none"))
+            if (BoardManager.instance.Slots[i].Color.Equals("none"))
             {
                 board[i] = 0f;
             }
-            else if(GameSystem.instance.Slots[i].Color.Equals(Opponent.Color))
+            else if(BoardManager.instance.Slots[i].Color.Equals(Opponent.Color))
             {
-                board[i] = GameSystem.instance.Slots.Count;
+                board[i] = BoardManager.instance.Slots.Count;
             }
             else
             {
-                board[i] = -1 * GameSystem.instance.Slots.Count;
+                board[i] = -1 * BoardManager.instance.Slots.Count;
             }
         }
         //9 floats
@@ -190,12 +189,12 @@ public class PlayerAgent : Agent
             if (Player.Color == "white")
             {
                 DeckHandler.instance.RemoveFromPlayer1(card);
-                GameSystem.instance.DestroyCardFromPlayerHolder(card);
+                UserInterfaceManager.instance.DestroyCardFromPlayer1CardHolder(card);
             }
             else
             {
                 DeckHandler.instance.RemoveFromPlayer2(card);
-                GameSystem.instance.DestroyCardFromEnemyHolder();
+                UserInterfaceManager.instance.DestroyCardFromPlayer2CardHolder();
             }
 
             //get the position on board for token placement
@@ -204,10 +203,9 @@ public class PlayerAgent : Agent
             //set last played card
             DeckHandler.instance.lastPlayed = card;
             DeckHandler.instance.playedCards.Add(card);
-            DeckHandler.instance.InstantiatePlayedCard(card);
-            GameSystem.instance.lastCardImage.sprite = DeckHandler.instance.cards[card].GetComponent<Image>().sprite;
+            UserInterfaceManager.instance.InstantiatePlayedCard(card);
             
-            GameSystem.instance.PlaceToken(pos, Player.Color, Player.TokenType);
+            BoardManager.instance.PlaceToken(pos, Player.Color, Player.TokenType);
             newTokensCaptured = int.Parse(Player.CapturedTokens.text) - newTokensCaptured;
             AddReward(newTokensCaptured);
             if (Player.Color == "white")

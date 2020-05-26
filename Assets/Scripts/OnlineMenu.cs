@@ -29,5 +29,4 @@ public class OnlineMenu : MonoBehaviour
         onlineMenuCanvas.SetActive(false);
         mainMenuCanvas.SetActive(true);
     }
-    
 }

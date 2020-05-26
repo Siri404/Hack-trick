@@ -115,7 +115,7 @@ public class DeckHandler : MonoBehaviour
         {
             deck[lastPlayed]--;
             playedCards.Add(lastPlayed);
-            InstantiatePlayedCard(lastPlayed);
+            UserInterfaceManager.instance.InstantiatePlayedCard(lastPlayed);
             cardsInDeck--;
         }
     }
@@ -132,12 +132,15 @@ public class DeckHandler : MonoBehaviour
         cardsInDeck--;
         player2.CardsInHand.Add(card);
         PlayDrawCardSound();
-        Instantiate(cards[6], Instantiate(panel, player2CardHolder).transform);
+        
+        //ui draw
+        UserInterfaceManager.instance.InstantiateCardForPlayer2();
+        
         ChatManager.instance.SendToActionLog("Enemy draws a card");
         GameSystem.instance.state = GameState.Playerturn;
     }
     
-    //draw for player 2 (no human error check)
+    //draw random card for player 2
     public void DrawForPlayer2()
     {
         if(GameSystem.instance.state != GameState.Enemyturn) return;
@@ -164,7 +167,10 @@ public class DeckHandler : MonoBehaviour
         cardsInDeck--;
         player2.CardsInHand.Add(card);
         PlayDrawCardSound();
-        Instantiate(cards[6], Instantiate(panel, player2CardHolder).transform);
+        
+        //ui draw
+        UserInterfaceManager.instance.InstantiateCardForPlayer2();
+        
         ChatManager.instance.SendToActionLog("Enemy draws a card");
         GameSystem.instance.state = GameState.Playerturn;
     }
@@ -202,9 +208,11 @@ public class DeckHandler : MonoBehaviour
         deck[card]--;
         cardsInDeck--;
         player1.CardsInHand.Add(card);
-        //ui draw
         PlayDrawCardSound();
-        Instantiate(cards[card], Instantiate(panel, player1CardHolder).transform);
+        
+        //ui draw
+        UserInterfaceManager.instance.InstantiateCardForPlayer1(card);
+        
         GameSystem.instance.playerActionVector[0] = 1;
         GameSystem.instance.playerActionVector[4] = card;
         ChatManager.instance.SendToActionLog("Player draws a card");
@@ -250,7 +258,9 @@ public class DeckHandler : MonoBehaviour
             deck[card]--;
             cardsInDeck--;
             player2.CardsInHand.Add(card);
-            Instantiate(cards[6], Instantiate(panel, player2CardHolder).transform);
+            
+            //ui draw
+            UserInterfaceManager.instance.InstantiateCardForPlayer2();
         }
 
         //draw for player 1
@@ -265,8 +275,9 @@ public class DeckHandler : MonoBehaviour
             deck[card]--;
             cardsInDeck--;
             player1.CardsInHand.Add(card);
+            
             //ui draw
-            Instantiate(cards[card], Instantiate(panel, player1CardHolder).transform);
+            UserInterfaceManager.instance.InstantiateCardForPlayer1(card);
         }
         
         //draw play card
@@ -278,26 +289,10 @@ public class DeckHandler : MonoBehaviour
 
         lastPlayed = card;
         playedCards.Add(card);
-        InstantiatePlayedCard(card);
+        UserInterfaceManager.instance.InstantiatePlayedCard(card);
         deck[card]--;
         cardsInDeck--;
-        lastCardImage.sprite = cards[card].GetComponent<Image>().sprite;
         ChatManager.instance.SendToActionLog("Enemy card total is: " + player2.CardsInHand.Sum());
-    }
-    
-    public void InstantiatePlayedCard(int card)
-    {
-        Instantiate(cards[card], Instantiate(panel, playedCardsHolder).transform);
-    }
-
-    public void InstantiateCardForPlayer(int card)
-    {
-        Instantiate(cards[card], Instantiate(panel, player1CardHolder).transform);
-    }
-
-    public void InstantiateCardForEnemy()
-    {
-        Instantiate(cards[6], Instantiate(panel, player2CardHolder).transform);
     }
 
     public void PlayDrawCardSound()
