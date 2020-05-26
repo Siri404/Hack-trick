@@ -205,6 +205,8 @@ public class PlayerAgent : Agent
             DeckHandler.instance.playedCards.Add(card);
             UserInterfaceManager.instance.InstantiatePlayedCard(card);
             
+            ChatManager.instance.SendToActionLog("Enemy played a " + card);
+            
             BoardManager.instance.PlaceToken(pos, Player.Color, Player.TokenType);
             newTokensCaptured = int.Parse(Player.CapturedTokens.text) - newTokensCaptured;
             AddReward(newTokensCaptured);

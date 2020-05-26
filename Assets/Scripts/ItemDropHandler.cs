@@ -28,6 +28,8 @@ public class ItemDropHandler : MonoBehaviour, IDropHandler
             DeckHandler.instance.lastPlayed = card;
             DeckHandler.instance.playedCards.Add(card);
             UserInterfaceManager.instance.InstantiatePlayedCard(card);
+            
+            ChatManager.instance.SendToActionLog("You played a " + card);
         
             //disable played card and it's parent slot
             Destroy(ItemDragHandler.ObjectBeingDragged.transform.parent.gameObject);

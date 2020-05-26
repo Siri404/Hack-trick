@@ -274,6 +274,9 @@ public class GameSystem : MonoBehaviour
             DeckHandler.instance.RemoveFromPlayer2(card);
             UserInterfaceManager.instance.DestroyCardFromPlayer2CardHolder();
             
+            ChatManager.instance.SendToActionLog("Enemy played a " + card);
+
+            
             // get the position on board for token placement
             int pos = DeckHandler.instance.lastPlayed + card - 1;
             
@@ -521,6 +524,7 @@ public class GameSystem : MonoBehaviour
             DeckHandler.instance.lastPlayed = card;
             DeckHandler.instance.playedCards.Add(card);
             UserInterfaceManager.instance.InstantiatePlayedCard(card);
+            ChatManager.instance.SendToActionLog("Enemy played a " + card);
             BoardManager.instance.PlaceToken(pos, player2.Color, player2.TokenType);
         }
         state = GameState.Playerturn;
