@@ -17,16 +17,6 @@ public class DeckHandler : MonoBehaviour
     
     public List<int> playedCards = new List<int>(18);
     public int lastPlayed = -1;
-    public Image lastCardImage;
-
-    public List<GameObject> cards;
-    [FormerlySerializedAs("cardHolder")] 
-    public Transform player1CardHolder;
-    [FormerlySerializedAs("enemyCardHolder")] 
-    public Transform player2CardHolder;
-    public Transform playedCardsHolder;
-    public GameObject panel;
-    
 
     //deck starts with 3 copies of each card
     private void Start()
@@ -86,10 +76,11 @@ public class DeckHandler : MonoBehaviour
     private void shuffle_deck()
     {
         ChatManager.instance.SendToActionLog("Shuffling deck!");
+        
+        //reset played cards
         playedCards.Clear();
-        foreach (Transform child in playedCardsHolder) {
-            Destroy(child.gameObject);
-        }
+        UserInterfaceManager.instance.DestroyFromPlayedCardHolder();
+        
         for (int i = 0; i < 6; i++)
         {
             deck[i] = 3;

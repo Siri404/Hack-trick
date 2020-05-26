@@ -76,6 +76,13 @@ public class UserInterfaceManager : MonoBehaviour
         }
     }
 
+    public void DestroyFromPlayedCardHolder()
+    {
+        foreach (Transform child in playedCardsHolder) {
+            Destroy(child.gameObject);
+        }
+    }
+
     public void Start()
     {
         //only one UserInterfaceManager instance should exist
