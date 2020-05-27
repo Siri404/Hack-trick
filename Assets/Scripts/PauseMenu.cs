@@ -55,21 +55,34 @@ public class PauseMenu : MonoBehaviour
 
     public void QuitGame()
     {
-        Application.Quit();
-    }
-
-    public void QuitToMainMenu()
-    {
+        Client client = FindObjectOfType<Client>();
+        if (client != null)
+        {
+            client.CloseSocket();
+            Destroy(client.gameObject);
+        }
+        
         Server server = FindObjectOfType<Server>();
         if (server != null)
         {
             Destroy(server.gameObject);
         }
 
+        Application.Quit();
+    }
+
+    public void QuitToMainMenu()
+    {
         Client client = FindObjectOfType<Client>();
         if (client != null)
         {
             Destroy(client.gameObject);
+        }
+        
+        Server server = FindObjectOfType<Server>();
+        if (server != null)
+        {
+            Destroy(server.gameObject);
         }
 
         SceneManager.LoadScene("Menu");

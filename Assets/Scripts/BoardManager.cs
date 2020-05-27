@@ -69,15 +69,12 @@ public class BoardManager : MonoBehaviour
             //update info on screen
             if (color == "white")
             {
-                UserInterfaceManager.instance.whitePlayerTokens.text = 
-                    (int.Parse(UserInterfaceManager.instance.whitePlayerTokens.text) - 1).ToString();
+                UserInterfaceManager.instance.UseWhitePlayerToken();
             }
             else
             {
-                UserInterfaceManager.instance.redPlayerTokens.text = 
-                    (int.Parse(UserInterfaceManager.instance.redPlayerTokens.text) - 1).ToString();
+                UserInterfaceManager.instance.UseRedPlayerToken();
             }
-            
             return;
         }
         
@@ -97,17 +94,13 @@ public class BoardManager : MonoBehaviour
         //update info on screen
         if (color == "white")
         {
-            UserInterfaceManager.instance.whitePlayerTokens.text = 
-                (int.Parse(UserInterfaceManager.instance.whitePlayerTokens.text) - 1).ToString();
-            UserInterfaceManager.instance.whitePlayerTokensCaptured.text = 
-                (Int32.Parse(UserInterfaceManager.instance.whitePlayerTokensCaptured.text) + tokensTaken).ToString();
+            UserInterfaceManager.instance.UseWhitePlayerToken();
+            UserInterfaceManager.instance.UseRedPlayerCapturedToken(tokensTaken);
         }
         else
         {
-            UserInterfaceManager.instance.redPlayerTokens.text = 
-                (int.Parse(UserInterfaceManager.instance.redPlayerTokens.text) - 1).ToString();
-            UserInterfaceManager.instance.redPlayerTokensCaptured.text = 
-                (int.Parse(UserInterfaceManager.instance.redPlayerTokensCaptured.text) + tokensTaken).ToString();
+            UserInterfaceManager.instance.UseRedPlayerToken();
+            UserInterfaceManager.instance.UseRedPlayerCapturedToken(tokensTaken);
         }
     }
     

@@ -124,4 +124,25 @@ public class UserInterfaceManager : MonoBehaviour
     {
         return Instantiate(tokens[token], slotTransforms[pos * 3 + tokensOnSlot]);
     }
+
+    public void UseWhitePlayerToken()
+    {
+        whitePlayerTokens.text = (int.Parse(whitePlayerTokens.text) - 1).ToString();
+    }
+
+    public void UseWhitePlayerCapturedToken(int tokensTaken)
+    { 
+        whitePlayerTokensCaptured.text = (Int32.Parse(whitePlayerTokensCaptured.text) + tokensTaken).ToString();
+    }
+
+    public void UseRedPlayerToken()
+    {
+        redPlayerTokens.text = (int.Parse(redPlayerTokens.text) - 1).ToString();
+    }
+
+    public void UseRedPlayerCapturedToken(int tokensTaken)
+    {
+        redPlayerTokensCaptured.text = (int.Parse(redPlayerTokensCaptured.text) + tokensTaken).ToString();
+    }
+    
 }
