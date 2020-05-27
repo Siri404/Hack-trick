@@ -53,7 +53,6 @@ public class Server : MonoBehaviour
             //is client still connected?
             if (!IsConnected(client.tcp))
             {
-                client.tcp.Close();
                 disconnectList.Add(client);
             }
             else

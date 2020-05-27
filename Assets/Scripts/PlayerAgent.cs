@@ -2,7 +2,6 @@
 using MLAgents;
 using MLAgents.Sensors;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class PlayerAgent : Agent
 {
@@ -15,22 +14,27 @@ public class PlayerAgent : Agent
         List<int> illegalActions = new List<int>();
         for (int i = 0; i < 6; i++)
         {
+            //can't play cards that are not in hand
             if (!Player.CardsInHand.Contains(i))
             {
                 illegalActions.Add(i);
             }
         }
 
+        //can't play last played card
         if (!illegalActions.Contains(DeckHandler.instance.lastPlayed))
         {
             illegalActions.Add(DeckHandler.instance.lastPlayed);
         }
 
+        //6 represents drawing a new card 
+        //can't have 5 cards in hand
         if (Player.CardsInHand.Count == 4)
         {
             illegalActions.Add(6);
         }
 
+        //if forced to play and able to play cards in hand - can't draw card
         if (Player.ForcedToPlay && !illegalActions.Contains(6))
         {
             bool canPlay;
@@ -52,13 +56,17 @@ public class PlayerAgent : Agent
             }
         }
 
+        //set main action (play card 0-5, 6 - draw card)
         actionMasker.SetMask(0, illegalActions);
-        if (int.Parse(GameSystem.instance.playerTokens.text) < 2)
+        
+        //can't sacrifice last token to block/force enemy to play
+        if (int.Parse(Player.Tokens.text) < 2)
         {
             actionMasker.SetMask(1, new []{1});
             actionMasker.SetMask(2, new []{1});
         }
 
+        //cant force enemy to play if he has no cards / is blocking
         if (Opponent.CardsInHand.Count == 0 || Opponent.CardsInHand.Count == 4 || Opponent.Blocking)
         {
             actionMasker.SetMask(2, new []{1});
@@ -70,30 +78,33 @@ public class PlayerAgent : Agent
         float[] board = new float[9];
         for (int i = 0; i < 9; i++)
         {
-            if (GameSystem.instance.Slots[i].Color.Equals("none"))
+            //no token on this slot
+            if (BoardManager.instance.Slots[i].Color.Equals("none"))
             {
                 board[i] = 0f;
             }
-            else if(GameSystem.instance.Slots[i].Color.Equals(Opponent.Color))
+            //opponent token on this slot
+            else if(BoardManager.instance.Slots[i].Color.Equals(Opponent.Color))
             {
-                board[i] = GameSystem.instance.Slots.Count;
+                board[i] = BoardManager.instance.Slots.Count;
             }
+            //own token on this slot
             else
             {
-                board[i] = -1 * GameSystem.instance.Slots.Count;
+                board[i] = -1 * BoardManager.instance.Slots.Count;
             }
         }
-        //9 floats
+        //9 floats - board state
         sensor.AddObservation(board);
-        //1 float
+        //1 float - own tokens left
         sensor.AddObservation(float.Parse(Player.Tokens.text));
-        //1 float
+        //1 float - captured tokens left
         sensor.AddObservation(float.Parse(Player.CapturedTokens.text));
-        //1 float
+        //1 float - opponent tokens left
         sensor.AddObservation(float.Parse(Opponent.Tokens.text));
-        //1 float
+        //1 float - number of cards in hand
         sensor.AddObservation(Player.CardsInHand.Count);
-        //1 float
+        //1 float - number of cards in opponent's hand
         sensor.AddObservation(Opponent.CardsInHand.Count);
         
         //9+1+1+1+1+1 = 14 values
@@ -190,12 +201,12 @@ public class PlayerAgent : Agent
             if (Player.Color == "white")
             {
                 DeckHandler.instance.RemoveFromPlayer1(card);
-                GameSystem.instance.DestroyCardFromPlayerHolder(card);
+                UserInterfaceManager.instance.DestroyCardFromPlayer1CardHolder(card);
             }
             else
             {
                 DeckHandler.instance.RemoveFromPlayer2(card);
-                GameSystem.instance.DestroyCardFromEnemyHolder();
+                UserInterfaceManager.instance.DestroyCardFromPlayer2CardHolder();
             }
 
             //get the position on board for token placement
@@ -204,10 +215,11 @@ public class PlayerAgent : Agent
             //set last played card
             DeckHandler.instance.lastPlayed = card;
             DeckHandler.instance.playedCards.Add(card);
-            DeckHandler.instance.InstantiatePlayedCard(card);
-            GameSystem.instance.lastCardImage.sprite = DeckHandler.instance.cards[card].GetComponent<Image>().sprite;
+            UserInterfaceManager.instance.InstantiatePlayedCard(card);
             
-            GameSystem.instance.PlaceToken(pos, Player.Color, Player.TokenType);
+            ChatManager.instance.SendToActionLog("Enemy played a " + card);
+            
+            BoardManager.instance.PlaceToken(pos, Player.Color, Player.TokenType);
             newTokensCaptured = int.Parse(Player.CapturedTokens.text) - newTokensCaptured;
             AddReward(newTokensCaptured);
             if (Player.Color == "white")

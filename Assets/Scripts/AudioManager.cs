@@ -33,19 +33,19 @@ public class AudioManager : MonoBehaviour
 		}
 	}
 
-	public void Play(string sound)
+	public void Play(string soundName)
 	{
-		Sound s = Array.Find(sounds, item => item.name == sound);
-		if (s == null)
+		Sound sound = Array.Find(sounds, item => item.name == soundName);
+		if (sound == null)
 		{
 			Debug.LogWarning("Sound: " + name + " not found!");
 			return;
 		}
 
-		s.source.volume = s.volume * (1f + UnityEngine.Random.Range(-s.volumeVariance / 2f, s.volumeVariance / 2f));
-		s.source.pitch = s.pitch * (1f + UnityEngine.Random.Range(-s.pitchVariance / 2f, s.pitchVariance / 2f));
+		sound.source.volume = sound.volume * (1f + UnityEngine.Random.Range(-sound.volumeVariance / 2f, sound.volumeVariance / 2f));
+		sound.source.pitch = sound.pitch * (1f + UnityEngine.Random.Range(-sound.pitchVariance / 2f, sound.pitchVariance / 2f));
 
-		s.source.Play();
+		sound.source.Play();
 	}
 
 	public void Start()
