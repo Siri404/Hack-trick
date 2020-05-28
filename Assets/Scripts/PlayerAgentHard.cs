@@ -3,7 +3,7 @@ using Unity.MLAgents;
 using Unity.MLAgents.Sensors;
 using UnityEngine;
 
-public class PlayerAgent : Agent
+public class PlayerAgentHard : Agent
 {
     private float penalty = 0.1f;
     private float reward = 0.1f;
@@ -102,21 +102,36 @@ public class PlayerAgent : Agent
                 board[i] = -1 * BoardManager.instance.Slots.Count;
             }
         }
+
+        float[] playerHand = {0, 0, 0, 0, 0, 0};
+        float[] opponentHand = {0, 0, 0, 0, 0, 0};
+        
+        foreach (int card in Player.CardsInHand)
+        {
+            playerHand[card] += 1;
+        }
+
+        foreach (int card in Opponent.CardsInHand)
+        {
+            opponentHand[card] += 1;
+        }
         
         //9 floats - board state
         sensor.AddObservation(board);
         //1 float - own tokens left
         sensor.AddObservation(float.Parse(Player.Tokens.text));
-        //1 float - own captured left
-        sensor.AddObservation(float.Parse(Player.CapturedTokens.text));
         //1 float - opponent tokens left
         sensor.AddObservation(float.Parse(Opponent.Tokens.text));
         //1 float - number of cards in hand
         sensor.AddObservation(Player.CardsInHand.Count);
         //1 float - number of cards in opponent's hand
         sensor.AddObservation(Opponent.CardsInHand.Count);
+        //6 float - cards in his own hand
+        sensor.AddObservation(playerHand);
+        //6 float - cards in opponent's hand
+        sensor.AddObservation(opponentHand);
         
-        //9+1+1+1+1+1 = 14 values
+        //9+1+1+1+1+6+6 = 25 values
         
     }
 
@@ -247,5 +262,12 @@ public class PlayerAgent : Agent
             }
         }
     }
-
+    
+    public override void OnEpisodeBegin()
+    {
+        if ( GameSystem.instance.state != GameState.Start && Player.Color == "white")
+        {
+            GameSystem.instance.ResetGame();
+        }
+    }
 }

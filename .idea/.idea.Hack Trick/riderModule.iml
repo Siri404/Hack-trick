@@ -2,7 +2,6 @@
 <module type="RIDER_MODULE" version="4">
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$/../.." />
-    <content url="file://$MODULE_DIR$/../../../../Machine_Learning/ml_agents/ml-agents-0.15.1/ml-agents-0.15.1/com.unity.ml-agents" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>

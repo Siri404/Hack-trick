@@ -21,6 +21,7 @@ public class GameSystem : MonoBehaviour
     private bool playerAskedSum;
     private readonly Random _random = new Random();
 
+    public PlayerAgentHard playerAgent1;
     public PlayerAgent playerAgent2;
 
     public Client client;
@@ -28,6 +29,7 @@ public class GameSystem : MonoBehaviour
     public static bool isMultiplayer = true;
     public bool waitingForServer = true;
     public List<int> playerActionVector = new List<int> {0, 0, 0, 0, 0};
+    public List<int> heuristicActionVector = new List<int> {0, 0, 0};
 
 
     public void ResetGame()
@@ -89,6 +91,9 @@ public class GameSystem : MonoBehaviour
         }
         playerAgent2.Player = player2;
         playerAgent2.Opponent = player1;
+
+        playerAgent1.Player = player1;
+        playerAgent1.Opponent = player2;
 
         state = GameState.Start;
         StartCoroutine(SetupGame());
@@ -182,6 +187,7 @@ public class GameSystem : MonoBehaviour
         {
             waitingForServer = true;
         }
+        playerAgent1.RequestDecision();
         //game not over -> sendPlayerMove
         if (state == GameState.Enemyturn)
         {
@@ -196,8 +202,44 @@ public class GameSystem : MonoBehaviour
             {
                 StartCoroutine(EnemyTurn());
             }
+            else
+            {
+                if (state == GameState.Won)
+                {
+                    UserInterfaceManager.instance.AddWinForPlayer1();
+                    playerAgent1.SetReward(1f);
+                    playerAgent2.SetReward(-1f);
+                }
+                else
+                {
+                    UserInterfaceManager.instance.AddWinForPlayer2();
+                    playerAgent1.SetReward(-1f);
+                    playerAgent2.SetReward(1f);
+                }
+                yield return new WaitForSeconds(7f);
+                playerAgent1.EndEpisode();
+                playerAgent2.EndEpisode();
+            }
         }
-        
+        else
+        {
+            if (state == GameState.Won)
+            {
+                UserInterfaceManager.instance.AddWinForPlayer1();
+                playerAgent1.SetReward(1f);
+                playerAgent2.SetReward(-1f);
+            }
+            else
+            {
+                UserInterfaceManager.instance.AddWinForPlayer2();
+                playerAgent1.SetReward(-1f);
+                playerAgent2.SetReward(1f);
+            }
+            ChatManager.instance.SendToActionLog("Episode End!");
+            yield return new WaitForSeconds(3f);
+            playerAgent1.EndEpisode();
+            playerAgent2.EndEpisode();
+        }
     }
     
     IEnumerator EnemyTurn()
@@ -335,6 +377,9 @@ public class GameSystem : MonoBehaviour
             player1.Tokens.text = (int.Parse(player1.Tokens.text) + 1).ToString();
             playerActionVector[2] = 0;
             ChatManager.instance.SendToActionLog("Enemy no longer forced to play next turn");
+            
+            //record move for imitation learning
+            heuristicActionVector[2] = 0;
             return;
         }
         if (player2.CardsInHand.Count == 0)
@@ -353,6 +398,9 @@ public class GameSystem : MonoBehaviour
         player1.Tokens.text = (int.Parse(player1.Tokens.text) - 1).ToString();
         playerActionVector[2] = 1;
         ChatManager.instance.SendToActionLog("Enemy forced to play next turn");
+        
+        //record move for imitation learning
+        heuristicActionVector[2] = 1;
     }
 
     public void ForcePlayerToPlay()
@@ -375,6 +423,9 @@ public class GameSystem : MonoBehaviour
             player1.Tokens.text = (int.Parse(player1.Tokens.text) + 1).ToString();
             playerActionVector[1] = 0;
             ChatManager.instance.SendToActionLog("You are no longer blocking");
+            
+            //record move for imitation learning
+            heuristicActionVector[1] = 0;
         }
         else if (int.Parse(player1.Tokens.text) > 2)
         {
@@ -382,6 +433,9 @@ public class GameSystem : MonoBehaviour
             player1.Tokens.text = (int.Parse(player1.Tokens.text) - 1).ToString();
             playerActionVector[1] = 1;
             ChatManager.instance.SendToActionLog("You are now blocking");
+            
+            //record move for imitation learning
+            heuristicActionVector[1] = 1;
         }
         else
         {

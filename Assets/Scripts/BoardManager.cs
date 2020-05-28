@@ -95,12 +95,12 @@ public class BoardManager : MonoBehaviour
         if (color == "white")
         {
             UserInterfaceManager.instance.UseWhitePlayerToken();
-            UserInterfaceManager.instance.UseRedPlayerCapturedToken(tokensTaken);
+            UserInterfaceManager.instance.AddWhitePlayerCapturedToken(tokensTaken);
         }
         else
         {
             UserInterfaceManager.instance.UseRedPlayerToken();
-            UserInterfaceManager.instance.UseRedPlayerCapturedToken(tokensTaken);
+            UserInterfaceManager.instance.AddRedPlayerCapturedToken(tokensTaken);
         }
     }
     
@@ -114,9 +114,7 @@ public class BoardManager : MonoBehaviour
                 Slots[_slotConverter[line * 3 + 1]].Color == GameSystem.instance.player1.Color && 
                 Slots[_slotConverter[line * 3 + 2]].Color == GameSystem.instance.player1.Color)
             {
-                ChatManager.instance.SendToActionLog("You Won!");
-                GameSystem.instance.state = GameState.Won;
-                GameSystem.instance.gameOver.GameOverDialogue();
+                GameWonDialogue();
                 return;
             }
             
@@ -124,9 +122,7 @@ public class BoardManager : MonoBehaviour
                 && Slots[_slotConverter[line * 3 + 1]].Color == GameSystem.instance.player2.Color 
                 && Slots[_slotConverter[line * 3 + 2]].Color == GameSystem.instance.player2.Color)
             {
-                ChatManager.instance.SendToActionLog("You Lost!");
-                GameSystem.instance.state = GameState.Lost;
-                GameSystem.instance.gameOver.GameOverDialogue();
+                GameLostDialogue();
                 return;
             }
             
@@ -134,9 +130,7 @@ public class BoardManager : MonoBehaviour
                 && Slots[_slotConverter[line + 3]].Color == GameSystem.instance.player1.Color 
                 && Slots[_slotConverter[line + 6]].Color == GameSystem.instance.player1.Color)
             {
-                ChatManager.instance.SendToActionLog("You Won!");
-                GameSystem.instance.state = GameState.Won;
-                GameSystem.instance.gameOver.GameOverDialogue();
+                GameWonDialogue();
                 return;
             }
             
@@ -144,9 +138,7 @@ public class BoardManager : MonoBehaviour
                 && Slots[_slotConverter[line + 3]].Color == GameSystem.instance.player2.Color
                 && Slots[_slotConverter[line + 6]].Color == GameSystem.instance.player2.Color)
             {
-                ChatManager.instance.SendToActionLog("You Lost!");
-                GameSystem.instance.state = GameState.Lost;
-                GameSystem.instance.gameOver.GameOverDialogue();
+                GameLostDialogue();
                 return;
             }
         }
@@ -156,9 +148,7 @@ public class BoardManager : MonoBehaviour
             && Slots[_slotConverter[4]].Color == GameSystem.instance.player1.Color
             && Slots[_slotConverter[8]].Color == GameSystem.instance.player1.Color)
         {
-            ChatManager.instance.SendToActionLog("You Won!");
-            GameSystem.instance.state = GameState.Won;
-            GameSystem.instance.gameOver.GameOverDialogue();
+            GameWonDialogue();
             return;
 
         }
@@ -167,9 +157,7 @@ public class BoardManager : MonoBehaviour
             && Slots[_slotConverter[4]].Color == GameSystem.instance.player2.Color
             && Slots[_slotConverter[8]].Color == GameSystem.instance.player2.Color)
         {
-            ChatManager.instance.SendToActionLog("You Lost!");
-            GameSystem.instance.state = GameState.Lost;
-            GameSystem.instance.gameOver.GameOverDialogue();
+            GameLostDialogue();
             return;
         }
 
@@ -177,9 +165,7 @@ public class BoardManager : MonoBehaviour
             && Slots[_slotConverter[4]].Color == GameSystem.instance.player1.Color 
             && Slots[_slotConverter[6]].Color == GameSystem.instance.player1.Color)
         {
-            ChatManager.instance.SendToActionLog("You Won!");
-            GameSystem.instance.state = GameState.Won;
-            GameSystem.instance.gameOver.GameOverDialogue();
+            GameWonDialogue();
             return;
         }
         
@@ -187,26 +173,20 @@ public class BoardManager : MonoBehaviour
             && Slots[_slotConverter[4]].Color == GameSystem.instance.player2.Color
             && Slots[_slotConverter[6]].Color == GameSystem.instance.player2.Color)
         {
-            ChatManager.instance.SendToActionLog("You Lost!");
-            GameSystem.instance.state = GameState.Lost;
-            GameSystem.instance.gameOver.GameOverDialogue();
+            GameLostDialogue();
             return;
         }
         
         //check tokens
         if (int.Parse(GameSystem.instance.player2.Tokens.text) == 0)
         {
-            ChatManager.instance.SendToActionLog("You Won!");
-            GameSystem.instance.state = GameState.Won;
-            GameSystem.instance.gameOver.GameOverDialogue();
+            GameWonDialogue();
             return;
         }
             
         if (int.Parse(GameSystem.instance.player1.Tokens.text) == 0)
         {
-            ChatManager.instance.SendToActionLog("You Lost!");
-            GameSystem.instance.state = GameState.Lost;
-            GameSystem.instance.gameOver.GameOverDialogue();
+            GameLostDialogue();
         }
         
         //check for stacks of 3 tokens
@@ -216,18 +196,28 @@ public class BoardManager : MonoBehaviour
             {
                 if (Slots[i].Color == GameSystem.instance.player1.Color)
                 {
-                    ChatManager.instance.SendToActionLog("You Won!");
-                    GameSystem.instance.state = GameState.Won;
-                    GameSystem.instance.gameOver.GameOverDialogue();
+                    GameWonDialogue();
                 }
                 else
                 {
-                    ChatManager.instance.SendToActionLog("You Lost!");
-                    GameSystem.instance.state = GameState.Lost;
-                    GameSystem.instance.gameOver.GameOverDialogue();
+                    GameLostDialogue();
                 }
             }
         }
+    }
+
+    private void GameWonDialogue()
+    {
+        ChatManager.instance.SendToActionLog("You Won!");
+        GameSystem.instance.state = GameState.Won;
+        //GameSystem.instance.gameOver.GameOverDialogue();
+    }
+
+    private void GameLostDialogue()
+    {
+        ChatManager.instance.SendToActionLog("You Lost!");
+        GameSystem.instance.state = GameState.Lost;
+        //GameSystem.instance.gameOver.GameOverDialogue();
     }
     
     public void PlayPlaceTokenSound()

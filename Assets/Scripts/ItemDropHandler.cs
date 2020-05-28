@@ -30,6 +30,9 @@ public class ItemDropHandler : MonoBehaviour, IDropHandler
             UserInterfaceManager.instance.InstantiatePlayedCard(card);
             
             ChatManager.instance.SendToActionLog("You played a " + card);
+            
+            //record move for imitation learning
+            GameSystem.instance.heuristicActionVector[0] = card;
         
             //disable played card and it's parent slot
             Destroy(ItemDragHandler.ObjectBeingDragged.transform.parent.gameObject);

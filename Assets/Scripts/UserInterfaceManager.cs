@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using JetBrains.Annotations;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,6 +13,8 @@ public class UserInterfaceManager : MonoBehaviour
     public TMP_Text whitePlayerTokensCaptured;
     public TMP_Text redPlayerTokens;
     public TMP_Text redPlayerTokensCaptured;
+    public TMP_Text playe1Wins;
+    public TMP_Text player2Wins;
     
     public Image lastCardImage;
     
@@ -23,6 +26,16 @@ public class UserInterfaceManager : MonoBehaviour
     public List<GameObject> cards;
     public List<GameObject> tokens;
 
+    public void AddWinForPlayer1()
+    {
+        playe1Wins.text = (Int32.Parse(playe1Wins.text) + 1).ToString();
+    }
+    
+    public void AddWinForPlayer2()
+    {
+        player2Wins.text = (Int32.Parse(player2Wins.text) + 1).ToString();
+    }
+    
     public void DestroyCardsFromHolders()
     {
         //destroy player cards
@@ -130,7 +143,7 @@ public class UserInterfaceManager : MonoBehaviour
         whitePlayerTokens.text = (int.Parse(whitePlayerTokens.text) - 1).ToString();
     }
 
-    public void UseWhitePlayerCapturedToken(int tokensTaken)
+    public void AddWhitePlayerCapturedToken(int tokensTaken)
     { 
         whitePlayerTokensCaptured.text = (Int32.Parse(whitePlayerTokensCaptured.text) + tokensTaken).ToString();
     }
@@ -140,7 +153,7 @@ public class UserInterfaceManager : MonoBehaviour
         redPlayerTokens.text = (int.Parse(redPlayerTokens.text) - 1).ToString();
     }
 
-    public void UseRedPlayerCapturedToken(int tokensTaken)
+    public void AddRedPlayerCapturedToken(int tokensTaken)
     {
         redPlayerTokensCaptured.text = (int.Parse(redPlayerTokensCaptured.text) + tokensTaken).ToString();
     }

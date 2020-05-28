@@ -205,6 +205,10 @@ public class DeckHandler : MonoBehaviour
         GameSystem.instance.playerActionVector[0] = 1;
         GameSystem.instance.playerActionVector[4] = card;
         ChatManager.instance.SendToActionLog("Player draws a card");
+        
+        //record move for imitation learning
+        GameSystem.instance.heuristicActionVector[0] = 6;
+        
         GameSystem.instance.state = GameState.Enemyturn;
     }
 
