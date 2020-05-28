@@ -22,7 +22,7 @@ public class GameSystem : MonoBehaviour
     private readonly Random _random = new Random();
 
     public PlayerAgentHard playerAgent1;
-    public PlayerAgent playerAgent2;
+    public PlayerAgentHard playerAgent2;
 
     public Client client;
     private Server server;
@@ -31,6 +31,7 @@ public class GameSystem : MonoBehaviour
     public List<int> playerActionVector = new List<int> {0, 0, 0, 0, 0};
     public List<int> heuristicActionVector = new List<int> {0, 0, 0};
 
+    private bool firstSetup = true;
 
     public void ResetGame()
     {
@@ -111,7 +112,11 @@ public class GameSystem : MonoBehaviour
         player2.Blocking = false;
         playerAskedSum = false;
 
-        yield return new WaitForSeconds(2f);
+        if (firstSetup)
+        {
+            yield return new WaitForSeconds(2f);
+            firstSetup = false;
+        }
         if (isMultiplayer)
         {
             //multi player setup
@@ -179,7 +184,7 @@ public class GameSystem : MonoBehaviour
         while (state == GameState.Playerturn)
         {
             ChatManager.instance.SendToActionLog("Waiting for player");
-
+            playerAgent1.RequestDecision();
             yield return new WaitUntil(() => state != GameState.Playerturn);
         }
         
@@ -187,7 +192,6 @@ public class GameSystem : MonoBehaviour
         {
             waitingForServer = true;
         }
-        playerAgent1.RequestDecision();
         //game not over -> sendPlayerMove
         if (state == GameState.Enemyturn)
         {
@@ -216,7 +220,7 @@ public class GameSystem : MonoBehaviour
                     playerAgent1.SetReward(-1f);
                     playerAgent2.SetReward(1f);
                 }
-                yield return new WaitForSeconds(7f);
+                //yield return new WaitForSeconds(7f);
                 playerAgent1.EndEpisode();
                 playerAgent2.EndEpisode();
             }
@@ -235,8 +239,7 @@ public class GameSystem : MonoBehaviour
                 playerAgent1.SetReward(-1f);
                 playerAgent2.SetReward(1f);
             }
-            ChatManager.instance.SendToActionLog("Episode End!");
-            yield return new WaitForSeconds(3f);
+            //yield return new WaitForSeconds(3f);
             playerAgent1.EndEpisode();
             playerAgent2.EndEpisode();
         }
@@ -251,7 +254,7 @@ public class GameSystem : MonoBehaviour
             player1.ForcedToPlay = false;
             player2.Blocking = false;
             
-            yield return new WaitForSeconds(3f);
+            //yield return new WaitForSeconds(3f);
             //take a random action / request decision from agent
             playerAgent2.RequestDecision();
             //EnemyRandomAction();
