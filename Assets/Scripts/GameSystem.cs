@@ -114,8 +114,8 @@ public class GameSystem : MonoBehaviour
 
         if (firstSetup)
         {
-            yield return new WaitForSeconds(2f);
-            firstSetup = false;
+            yield return new WaitForSeconds(0.2f);
+            //firstSetup = false;
         }
         if (isMultiplayer)
         {
