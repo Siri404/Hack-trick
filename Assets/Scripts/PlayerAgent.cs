@@ -215,7 +215,7 @@ public class PlayerAgent : Agent
             else
             {
                 DeckHandler.instance.RemoveFromPlayer2(card);
-                UserInterfaceManager.instance.DestroyCardFromPlayer2CardHolder();
+                UserInterfaceManager.instance.DestroyCardFromPlayer2CardHolder(card);
             }
 
             //get the position on board for token placement
@@ -245,6 +245,14 @@ public class PlayerAgent : Agent
                     GameSystem.instance.state = GameState.Playerturn;
                 }
             }
+        }
+    }
+    
+    public override void OnEpisodeBegin()
+    {
+        if ( GameSystem.instance.state != GameState.Start && Player.Color == "white")
+        {
+            GameSystem.instance.ResetGame();
         }
     }
 

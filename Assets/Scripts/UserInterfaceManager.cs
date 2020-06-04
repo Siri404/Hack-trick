@@ -76,17 +76,28 @@ public class UserInterfaceManager : MonoBehaviour
         }
     }
 
-    public void DestroyCardFromPlayer2CardHolder()
+    public void DestroyCardFromPlayer2CardHolder(int card)
     {
         Transform[] transforms = player2CardHolder.GetComponentsInChildren<Transform>();
-        if (transforms.Length > 1)
+        int i = 0;
+        while (i < transforms.Length)
         {
-            Destroy(transforms[1].gameObject);
+            if (transforms[i].GetComponentInChildren<Image>().name.Contains("Card_" + card))
+            {
+                Destroy(transforms[i].parent.gameObject);
+                return;
+            }
+
+            i++;
         }
-        else
-        {
-            Console.Write("Enemy has no cards -> can't destroy card from enemy holder!");
-        }
+        // if (transforms.Length > 1)
+        // {
+        //     Destroy(transforms[1].gameObject);
+        // }
+        // else
+        // {
+        //     Console.Write("Enemy has no cards -> can't destroy card from enemy holder!");
+        // }
     }
 
     public void DestroyFromPlayedCardHolder()
@@ -128,9 +139,9 @@ public class UserInterfaceManager : MonoBehaviour
         Instantiate(cards[card], Instantiate(cardSlot, player1CardHolder).transform);
     }
 
-    public void InstantiateCardForPlayer2()
+    public void InstantiateCardForPlayer2(int card)
     {
-        Instantiate(cards[6], Instantiate(cardSlot, player2CardHolder).transform);
+        Instantiate(cards[card], Instantiate(cardSlot, player2CardHolder).transform);
     }
 
     public GameObject InstantiateToken(int token, int pos, int tokensOnSlot)

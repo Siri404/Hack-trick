@@ -230,7 +230,7 @@ public class PlayerAgentHard : Agent
             else
             {
                 DeckHandler.instance.RemoveFromPlayer2(card);
-                UserInterfaceManager.instance.DestroyCardFromPlayer2CardHolder();
+                UserInterfaceManager.instance.DestroyCardFromPlayer2CardHolder(card);
             }
 
             //get the position on board for token placement

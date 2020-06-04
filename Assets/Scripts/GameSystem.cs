@@ -317,7 +317,7 @@ public class GameSystem : MonoBehaviour
 
             //remove played card from enemy
             DeckHandler.instance.RemoveFromPlayer2(card);
-            UserInterfaceManager.instance.DestroyCardFromPlayer2CardHolder();
+            UserInterfaceManager.instance.DestroyCardFromPlayer2CardHolder(card);
             
             ChatManager.instance.SendToActionLog("Enemy played a " + card);
 
@@ -480,7 +480,7 @@ public class GameSystem : MonoBehaviour
         foreach (string card in splitData[2].Split(','))
         {
             player2Hand.Add(Int32.Parse(card));
-            UserInterfaceManager.instance.InstantiateCardForPlayer2();
+            UserInterfaceManager.instance.InstantiateCardForPlayer2(Int32.Parse(card));
         }
 
         player2.CardsInHand = player2Hand;
@@ -572,7 +572,7 @@ public class GameSystem : MonoBehaviour
             
             //remove & destroy played card
             DeckHandler.instance.RemoveFromPlayer2(card);
-            UserInterfaceManager.instance.DestroyCardFromPlayer2CardHolder();
+            UserInterfaceManager.instance.DestroyCardFromPlayer2CardHolder(card);
 
             //get the position on board for token placement
             int pos = DeckHandler.instance.lastPlayed + card - 1;

@@ -123,7 +123,7 @@ public class DeckHandler : MonoBehaviour
         PlayDrawCardSound();
         
         //ui draw
-        UserInterfaceManager.instance.InstantiateCardForPlayer2();
+        UserInterfaceManager.instance.InstantiateCardForPlayer2(card);
         
         ChatManager.instance.SendToActionLog("Enemy draws a card");
         GameSystem.instance.state = GameState.Playerturn;
@@ -158,7 +158,7 @@ public class DeckHandler : MonoBehaviour
         PlayDrawCardSound();
         
         //ui draw
-        UserInterfaceManager.instance.InstantiateCardForPlayer2();
+        UserInterfaceManager.instance.InstantiateCardForPlayer2(card);
         
         ChatManager.instance.SendToActionLog("Enemy draws a card");
         GameSystem.instance.state = GameState.Playerturn;
@@ -253,7 +253,7 @@ public class DeckHandler : MonoBehaviour
             player2.CardsInHand.Add(card);
             
             //ui draw
-            UserInterfaceManager.instance.InstantiateCardForPlayer2();
+            UserInterfaceManager.instance.InstantiateCardForPlayer2(card);
         }
 
         //draw for player 1
