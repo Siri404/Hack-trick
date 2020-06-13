@@ -179,6 +179,7 @@ public class DeckHandler : MonoBehaviour
         if (player1.CardsInHand.Count == 4)
         {
             //can't have more than 4 cards in hand
+            ChatManager.instance.SendToActionLog("Can not have more than 4 cards in hand!");
             return;
         }
 

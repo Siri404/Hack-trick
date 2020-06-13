@@ -95,7 +95,7 @@ public class BoardManager : MonoBehaviour
         if (color == "white")
         {
             UserInterfaceManager.instance.UseWhitePlayerToken();
-            UserInterfaceManager.instance.UseRedPlayerCapturedToken(tokensTaken);
+            UserInterfaceManager.instance.UseWhitePlayerCapturedToken(tokensTaken);
         }
         else
         {
