@@ -22,6 +22,7 @@ public class GameSystem : MonoBehaviour
     private readonly Random _random = new Random();
 
     public PlayerAgent playerAgent2;
+    public PlayerAgentHard playerAgentHard2;
 
     public Client client;
     private Server server;
@@ -88,7 +89,9 @@ public class GameSystem : MonoBehaviour
             
         }
         playerAgent2.Player = player2;
+        playerAgentHard2.Player = player2;
         playerAgent2.Opponent = player1;
+        playerAgentHard2.Opponent = player1;
 
         state = GameState.Start;
         StartCoroutine(SetupGame());
@@ -211,7 +214,8 @@ public class GameSystem : MonoBehaviour
             
             yield return new WaitForSeconds(3f);
             //take a random action / request decision from agent
-            playerAgent2.RequestDecision();
+            //playerAgent2.RequestDecision();
+            playerAgentHard2.RequestDecision();
             //EnemyRandomAction();
             yield return new WaitUntil(() => state != GameState.Enemyturn);
             

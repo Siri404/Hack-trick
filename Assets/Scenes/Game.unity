@@ -1733,6 +1733,7 @@ MonoBehaviour:
   state: 0
   gameOver: {fileID: 729578816}
   playerAgent2: {fileID: 561268829}
+  playerAgentHard2: {fileID: 1743626197}
   client: {fileID: 0}
   waitingForServer: 1
   playerActionVector: 0000000000000000000000000000000000000000
@@ -2883,7 +2884,7 @@ MonoBehaviour:
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
-  maxStep: 0
+  MaxStep: 0
 --- !u!114 &561268831
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2897,16 +2898,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    vectorObservationSize: 14
-    numStackedVectorObservations: 1
-    vectorActionSize: 070000000200000002000000
-    vectorActionDescriptions: []
-    vectorActionSpaceType: 0
+    VectorObservationSize: 14
+    NumStackedVectorObservations: 1
+    VectorActionSize: 070000000200000002000000
+    VectorActionDescriptions: []
+    VectorActionSpaceType: 0
   m_Model: {fileID: 5022602860645237092, guid: d89291d01da9aea40b5f1d852caac487, type: 3}
   m_InferenceDevice: 0
   m_BehaviorType: 2
   m_BehaviorName: HackTrickLearning
-  TeamId: 0
+  TeamId: 1
   m_UseChildSensors: 1
 --- !u!4 &561268832
 Transform:
@@ -7114,13 +7115,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 1743626195}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1e0cc22110247804daf5404b4f8b3ce8, type: 3}
+  m_Script: {fileID: 11500000, guid: 1d1a0e33ed2abaf4d8530e8417403c50, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
-  maxStep: 0
+  MaxStep: 0
 --- !u!114 &1743626198
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7134,12 +7135,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    vectorObservationSize: 25
-    numStackedVectorObservations: 10
-    vectorActionSize: 070000000200000002000000
-    vectorActionDescriptions: []
-    vectorActionSpaceType: 0
-  m_Model: {fileID: 5022602860645237092, guid: d89291d01da9aea40b5f1d852caac487, type: 3}
+    VectorObservationSize: 25
+    NumStackedVectorObservations: 10
+    VectorActionSize: 070000000200000002000000
+    VectorActionDescriptions: []
+    VectorActionSpaceType: 0
+  m_Model: {fileID: 5022602860645237092, guid: 0165fa7d69b85ba419c334d30f16b20a, type: 3}
   m_InferenceDevice: 0
   m_BehaviorType: 2
   m_BehaviorName: HackTrickLearning
