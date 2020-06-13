@@ -24,6 +24,7 @@
           <e p="PauseMenu.cs" t="Include" />
           <e p="PlayedCardsManager.cs" t="Include" />
           <e p="PlayerAgent.cs" t="Include" />
+          <e p="PlayerAgentHard.cs" t="Include" />
           <e p="Server.cs" t="Include" />
           <e p="Sound.cs" t="Include" />
           <e p="UserInterfaceManager.cs" t="Include" />
