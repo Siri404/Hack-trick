@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
+using Unity.MLAgents;
 using UnityEngine;
 using Random = System.Random;
 
@@ -21,8 +22,9 @@ public class GameSystem : MonoBehaviour
     private bool playerAskedSum;
     private readonly Random _random = new Random();
 
-    public PlayerAgent playerAgent2;
+    public PlayerAgent playerAgentEasy2;
     public PlayerAgentHard playerAgentHard2;
+    private Agent playerAgent2;
 
     public Client client;
     private Server server;
@@ -88,10 +90,23 @@ public class GameSystem : MonoBehaviour
                 UserInterfaceManager.instance.redPlayerTokensCaptured, "red", 0 );
             
         }
-        playerAgent2.Player = player2;
+        playerAgentEasy2.Player = player2;
         playerAgentHard2.Player = player2;
-        playerAgent2.Opponent = player1;
+        playerAgentEasy2.Opponent = player1;
         playerAgentHard2.Opponent = player1;
+
+        if (DifficultyManager.instance.difficulty == Difficulty.Easy)
+        {
+            playerAgent2 = playerAgentEasy2;
+        }
+        else if(DifficultyManager.instance.difficulty == Difficulty.Hard)
+        {
+            playerAgent2 = playerAgentHard2;
+        }
+        else
+        {
+            ChatManager.instance.SendToActionLog("Error picking difficulty!");
+        }
 
         state = GameState.Start;
         StartCoroutine(SetupGame());
@@ -214,8 +229,7 @@ public class GameSystem : MonoBehaviour
             
             yield return new WaitForSeconds(3f);
             //take a random action / request decision from agent
-            //playerAgent2.RequestDecision();
-            playerAgentHard2.RequestDecision();
+            playerAgent2.RequestDecision();
             //EnemyRandomAction();
             yield return new WaitUntil(() => state != GameState.Enemyturn);
             

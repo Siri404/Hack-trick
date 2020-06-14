@@ -10,10 +10,12 @@
           <e p="AudioManager.cs" t="Include" />
           <e p="BoardManager.cs" t="Include" />
           <e p="ChatManager.cs" t="Include" />
+          <e p="ChooseDifficultyMenu.cs" t="Include" />
           <e p="Client.cs" t="Include" />
           <e p="ConnectionManager.cs" t="Include" />
           <e p="ConnectMenu.cs" t="Include" />
           <e p="DeckHandler.cs" t="Include" />
+          <e p="DifficultyManager.cs" t="Include" />
           <e p="GameOver.cs" t="Include" />
           <e p="GameSystem.cs" t="Include" />
           <e p="HostMEnu.cs" t="Include" />
@@ -25,6 +27,7 @@
           <e p="PlayedCardsManager.cs" t="Include" />
           <e p="PlayerAgent.cs" t="Include" />
           <e p="PlayerAgentHard.cs" t="Include" />
+          <e p="RulesMenu.cs" t="Include" />
           <e p="Server.cs" t="Include" />
           <e p="Sound.cs" t="Include" />
           <e p="UserInterfaceManager.cs" t="Include" />
