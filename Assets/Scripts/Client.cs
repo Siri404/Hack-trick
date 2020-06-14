@@ -115,15 +115,16 @@ public class Client : MonoBehaviour
         }
     }
 
-    private void CloseSocket()
+    public void CloseSocket()
     {
         if (!socketReady)
         {
             return;
         }
-        
+
         writer.Close();
         reader.Close();
+        stream.Close();
         socket.Close();
 
         socketReady = false;

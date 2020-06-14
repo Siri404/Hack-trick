@@ -1,14 +1,16 @@
 ﻿using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.Serialization;
 
 public class MainMenu : MonoBehaviour
 {
     public GameObject mainMenuCanvas;
     public GameObject onlineMenuCanvas;
-    public void StartSingleplayerGame(){
+    public GameObject chooseDifficultyCanvas;
+    public GameObject gameRulesCanvas;
+    public void PlayButtonHandler(){
         AudioManager.instance.Play("menu_button");
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
+        mainMenuCanvas.SetActive(false);
+        chooseDifficultyCanvas.SetActive(true);
     }
 
     public void OnlineButtonHandler()
@@ -17,6 +19,13 @@ public class MainMenu : MonoBehaviour
         mainMenuCanvas.SetActive(false);
         onlineMenuCanvas.SetActive(true);
         
+    }
+
+    public void GameRulesButtonHandler()
+    {
+        AudioManager.instance.Play("menu_button");
+        mainMenuCanvas.SetActive(false);
+        gameRulesCanvas.SetActive(true);
     }
 
     public void QuitGame()

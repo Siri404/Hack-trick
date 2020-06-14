@@ -3,12 +3,21 @@ using Unity.MLAgents;
 using Unity.MLAgents.Sensors;
 using UnityEngine;
 
-public class PlayerAgent : Agent
+public class PlayerAgentHard : Agent
 {
-    private float penalty = 1f;
+    private float penalty = 0.1f;
+    private float reward = 0.1f;
     public Player Player { get; set; }
     public Player Opponent { get; set; }
 
+    //used for demo recording - requires training setup
+    // public override void Heuristic(float[] actionsOut )
+    // {
+    //     actionsOut[0] = GameSystem.instance.heuristicActionVector[0];
+    //     actionsOut[1] = GameSystem.instance.heuristicActionVector[1];
+    //     actionsOut[2] = GameSystem.instance.heuristicActionVector[2];
+    // }
+    
     public override void CollectDiscreteActionMasks(DiscreteActionMasker actionMasker)
     {
         List<int> illegalActions = new List<int>();
@@ -94,20 +103,36 @@ public class PlayerAgent : Agent
                 board[i] = -1 * BoardManager.instance.Slots.Count;
             }
         }
+
+        float[] playerHand = {0, 0, 0, 0, 0, 0};
+        float[] opponentHand = {0, 0, 0, 0, 0, 0};
+        
+        foreach (int card in Player.CardsInHand)
+        {
+            playerHand[card] += 1;
+        }
+
+        foreach (int card in Opponent.CardsInHand)
+        {
+            opponentHand[card] += 1;
+        }
+        
         //9 floats - board state
         sensor.AddObservation(board);
         //1 float - own tokens left
         sensor.AddObservation(float.Parse(Player.Tokens.text));
-        //1 float - captured tokens left
-        sensor.AddObservation(float.Parse(Player.CapturedTokens.text));
         //1 float - opponent tokens left
         sensor.AddObservation(float.Parse(Opponent.Tokens.text));
         //1 float - number of cards in hand
         sensor.AddObservation(Player.CardsInHand.Count);
         //1 float - number of cards in opponent's hand
         sensor.AddObservation(Opponent.CardsInHand.Count);
+        //6 float - cards in his own hand
+        sensor.AddObservation(playerHand);
+        //6 float - cards in opponent's hand
+        sensor.AddObservation(opponentHand);
         
-        //9+1+1+1+1+1 = 14 values
+        //9+1+1+1+1+6+6 = 25 values
         
     }
 
@@ -221,7 +246,7 @@ public class PlayerAgent : Agent
             
             BoardManager.instance.PlaceToken(pos, Player.Color, Player.TokenType);
             newTokensCaptured = int.Parse(Player.CapturedTokens.text) - newTokensCaptured;
-            AddReward(newTokensCaptured);
+            AddReward(reward * newTokensCaptured);
             if (Player.Color == "white")
             {
                 if (GameSystem.instance.state == GameState.Playerturn)
@@ -238,5 +263,13 @@ public class PlayerAgent : Agent
             }
         }
     }
-
+    
+    //used for training
+    // public override void OnEpisodeBegin()
+    // {
+    //     if ( GameSystem.instance.state != GameState.Start && Player.Color == "white")
+    //     {
+    //         GameSystem.instance.ResetGame();
+    //     }
+    // }
 }

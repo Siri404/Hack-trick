@@ -1,7 +1,6 @@
 ﻿using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.UI;
 
 public class ItemDropHandler : MonoBehaviour, IDropHandler
 {
@@ -28,15 +27,16 @@ public class ItemDropHandler : MonoBehaviour, IDropHandler
             //set last played card
             DeckHandler.instance.lastPlayed = card;
             DeckHandler.instance.playedCards.Add(card);
-            DeckHandler.instance.InstantiatePlayedCard(card);
-            GetComponent<Image>().sprite = ItemDragHandler.ObjectBeingDragged.GetComponent<Image>().sprite;
+            UserInterfaceManager.instance.InstantiatePlayedCard(card);
+            
+            ChatManager.instance.SendToActionLog("You played a " + card);
         
             //disable played card and it's parent slot
             Destroy(ItemDragHandler.ObjectBeingDragged.transform.parent.gameObject);
             Destroy(ItemDragHandler.ObjectBeingDragged);
 
             //place token on board & set enemy turn
-            GameSystem.instance.PlaceToken(pos, GameSystem.instance.player1.Color, GameSystem.instance.player1.TokenType);
+            BoardManager.instance.PlaceToken(pos, GameSystem.instance.player1.Color, GameSystem.instance.player1.TokenType);
 
             if (GameSystem.instance.state == GameState.Playerturn)
             {
